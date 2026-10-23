@@ -1,6 +1,7 @@
 import {
   integer,
   numeric,
+  pgEnum,
   pgTable,
   serial,
   text,
@@ -82,5 +83,31 @@ export const saleItemsTable = pgTable("tager_sale_items", {
     scale: 2,
     mode: "number",
   }).notNull(),
+});
+
+export const inventoryMovementTypeEnum = pgEnum("tager_inventory_movement_type", [
+  "in",
+  "out",
+  "adjustment",
+]);
+
+export const inventoryMovementsTable = pgTable("tager_inventory_movements", {
+  id: serial("id").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  productId: integer("product_id").references(() => productsTable.id, {
+    onDelete: "set null",
+  }),
+  productName: text("product_name").notNull(),
+  type: inventoryMovementTypeEnum("movement_type").notNull(),
+  quantity: integer("quantity").notNull(),
+  previousQuantity: integer("previous_quantity").notNull(),
+  newQuantity: integer("new_quantity").notNull(),
+  reason: text("reason").notNull(),
+  saleId: integer("sale_id").references(() => salesTable.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 

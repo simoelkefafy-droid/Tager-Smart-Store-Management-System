@@ -247,6 +247,73 @@ export const CreateSaleResponse = zod.object({
 
 
 /**
+ * @summary List inventory movements
+ */
+
+export const listInventoryMovementsQueryLimitDefault = 50;
+export const listInventoryMovementsQueryLimitMax = 100;
+
+export const listInventoryMovementsQueryOffsetDefault = 0;
+export const listInventoryMovementsQueryOffsetMin = 0;
+
+
+
+export const ListInventoryMovementsQueryParams = zod.object({
+  "productId": zod.coerce.number().int().min(1).optional(),
+  "type": zod.enum(['in', 'out', 'adjustment']).optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional(),
+  "limit": zod.coerce.number().int().min(1).max(listInventoryMovementsQueryLimitMax).default(listInventoryMovementsQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(listInventoryMovementsQueryOffsetMin).default(listInventoryMovementsQueryOffsetDefault)
+})
+
+export const ListInventoryMovementsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "productId": zod.number().int().nullable(),
+  "productName": zod.string(),
+  "type": zod.enum(['in', 'out', 'adjustment']),
+  "quantity": zod.number().int(),
+  "previousQuantity": zod.number().int(),
+  "newQuantity": zod.number().int(),
+  "reason": zod.string(),
+  "saleId": zod.number().int().nullable(),
+  "createdAt": zod.coerce.date()
+})
+export const ListInventoryMovementsResponse = zod.array(ListInventoryMovementsResponseItem)
+
+
+/**
+ * @summary Add stock, remove stock, or reconcile physical stock
+ */
+
+export const createInventoryMovementBodyQuantityMin = 0;
+
+export const createInventoryMovementBodyReasonMax = 240;
+
+
+
+export const CreateInventoryMovementBody = zod.object({
+  "productId": zod.number().int().min(1),
+  "type": zod.enum(['in', 'out', 'adjustment']),
+  "quantity": zod.number().int().min(createInventoryMovementBodyQuantityMin).describe('For adjustment'),
+  "reason": zod.string().min(1).max(createInventoryMovementBodyReasonMax)
+})
+
+export const CreateInventoryMovementResponse = zod.object({
+  "id": zod.number().int(),
+  "productId": zod.number().int().nullable(),
+  "productName": zod.string(),
+  "type": zod.enum(['in', 'out', 'adjustment']),
+  "quantity": zod.number().int(),
+  "previousQuantity": zod.number().int(),
+  "newQuantity": zod.number().int(),
+  "reason": zod.string(),
+  "saleId": zod.number().int().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Get dashboard summary and recent sales
  */
 export const GetDashboardResponse = zod.object({

@@ -23,6 +23,9 @@ import type {
   Dashboard,
   GetReportsParams,
   HealthStatus,
+  InventoryMovement,
+  InventoryMovementInput,
+  ListInventoryMovementsParams,
   ListSalesParams,
   Product,
   ProductInput,
@@ -964,6 +967,178 @@ export const useCreateSale = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateSaleMutationOptions(options));
+    }
+
+export const getListInventoryMovementsUrl = (params?: ListInventoryMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory-movements?${stringifiedParams}` : `/api/inventory-movements`
+}
+
+/**
+ * @summary List inventory movements
+ */
+export const listInventoryMovements = async (params?: ListInventoryMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement[]> => {
+
+  return customFetch<InventoryMovement[]>(getListInventoryMovementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInventoryMovementsQueryKey = (params?: ListInventoryMovementsParams,) => {
+    return [
+    `/api/inventory-movements`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListInventoryMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInventoryMovementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInventoryMovements>>> = ({ signal }) => listInventoryMovements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInventoryMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryMovements>>>
+export type ListInventoryMovementsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List inventory movements
+ */
+
+export function useListInventoryMovements<TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(
+ params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInventoryMovementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateInventoryMovementUrl = () => {
+
+
+
+
+  return `/api/inventory-movements`
+}
+
+/**
+ * @summary Add stock, remove stock, or reconcile physical stock
+ */
+export const createInventoryMovement = async (inventoryMovementInput: InventoryMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryMovement>(getCreateInventoryMovementUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventoryMovementInput)
+  }
+);}
+
+
+
+
+
+export const getCreateInventoryMovementMutationKey = () => ['createInventoryMovement'] as const;
+
+export const getCreateInventoryMovementMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext> => {
+
+const mutationKey = getCreateInventoryMovementMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInventoryMovement>>, CreateInventoryMovementMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInventoryMovement(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInventoryMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createInventoryMovement>>>
+    export type CreateInventoryMovementMutationBody = BodyType<InventoryMovementInput>
+    export type CreateInventoryMovementMutationError = ErrorType<void>
+    export type CreateInventoryMovementMutationVariables = {data: BodyType<InventoryMovementInput>}
+
+    /**
+ * @summary Add stock, remove stock, or reconcile physical stock
+ */
+export const useCreateInventoryMovement = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInventoryMovement>>,
+        TError,
+        CreateInventoryMovementMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateInventoryMovementMutationOptions(options));
     }
 
 export const getGetDashboardUrl = () => {

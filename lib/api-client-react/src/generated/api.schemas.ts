@@ -81,6 +81,46 @@ export interface Sale {
   items: SaleLine[];
 }
 
+export type InventoryMovementType = typeof InventoryMovementType[keyof typeof InventoryMovementType];
+
+
+export const InventoryMovementType = {
+  in: 'in',
+  out: 'out',
+  adjustment: 'adjustment',
+} as const;
+
+export interface InventoryMovement {
+  id: number;
+  /** @nullable */
+  productId: number | null;
+  productName: string;
+  type: InventoryMovementType;
+  quantity: number;
+  previousQuantity: number;
+  newQuantity: number;
+  reason: string;
+  /** @nullable */
+  saleId: number | null;
+  createdAt: string;
+}
+
+export interface InventoryMovementInput {
+  /** @minimum 1 */
+  productId: number;
+  type: InventoryMovementType;
+  /**
+     * For adjustment
+     * @minimum 0
+     */
+  quantity: number;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  reason: string;
+}
+
 export interface Dashboard {
   totalSales: number;
   totalProfit: number;
@@ -117,6 +157,25 @@ export type ListSalesParams = {
  * @maximum 100
  */
 limit?: number;
+};
+
+export type ListInventoryMovementsParams = {
+/**
+ * @minimum 1
+ */
+productId?: number;
+type?: InventoryMovementType;
+from?: string;
+to?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
 };
 
 export type GetReportsParams = {

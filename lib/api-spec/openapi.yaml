@@ -212,6 +212,59 @@ paths:
           description: Invalid sale
         "409":
           description: Insufficient stock
+  /inventory-movements:
+    get:
+      operationId: listInventoryMovements
+      tags: [tager]
+      summary: List inventory movements
+      parameters:
+        - in: query
+          name: productId
+          schema: { type: integer, minimum: 1 }
+        - in: query
+          name: type
+          schema: { $ref: "#/components/schemas/InventoryMovementType" }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: Inventory movement history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/InventoryMovement" }
+    post:
+      operationId: createInventoryMovement
+      tags: [tager]
+      summary: Add stock, remove stock, or reconcile physical stock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventoryMovementInput" }
+      responses:
+        "201":
+          description: Inventory movement recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryMovement" }
+        "400":
+          description: Invalid movement
+        "404":
+          description: Product not found
+        "409":
+          description: Insufficient stock
   /dashboard:
     get:
       operationId: getDashboard
@@ -333,6 +386,31 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SaleLine"
+    InventoryMovementType:
+      type: string
+      enum: [in, out, adjustment]
+    InventoryMovement:
+      type: object
+      required: [id, productId, productName, type, quantity, previousQuantity, newQuantity, reason, saleId, createdAt]
+      properties:
+        id: { type: integer }
+        productId: { type: ["integer", "null"] }
+        productName: { type: string }
+        type: { $ref: "#/components/schemas/InventoryMovementType" }
+        quantity: { type: integer }
+        previousQuantity: { type: integer }
+        newQuantity: { type: integer }
+        reason: { type: string }
+        saleId: { type: ["integer", "null"] }
+        createdAt: { type: string, format: date-time }
+    InventoryMovementInput:
+      type: object
+      required: [productId, type, quantity, reason]
+      properties:
+        productId: { type: integer, minimum: 1 }
+        type: { $ref: "#/components/schemas/InventoryMovementType" }
+        quantity: { type: integer, minimum: 0, description: For adjustment, this is the physical count after stocktaking. }
+        reason: { type: string, minLength: 1, maxLength: 240 }
     Dashboard:
       type: object
       required: [totalSales, totalProfit, productsCount, lowStockCount, lowStockProducts, recentSales]

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "تاجر | Tager"
+description = "تطبيق عربي لإدارة المتاجر الصغيرة يشمل المنتجات والمبيعات والموردين والتقارير والتنبيهات، مع تخزين دائم وبيانات تجريبية."
+version = "1.0.0"
+id = "artifacts/tager"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24069
+
+[services.development]
+run = "pnpm --filter @workspace/tager run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tager", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tager/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24069"
+BASE_PATH = "/"

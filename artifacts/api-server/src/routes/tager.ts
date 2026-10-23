@@ -9,6 +9,7 @@ import {
   inArray,
   ilike,
   lt,
+  sql,
 } from "drizzle-orm";
 import {
   db,
@@ -55,6 +56,133 @@ class SaleError extends Error {
   ) {
     super(message);
   }
+}
+
+const inventoryHistoryReady = new Set<string>();
+
+async function backfillInventoryHistory(owner: string): Promise<void> {
+  if (inventoryHistoryReady.has(owner)) return;
+
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${owner}))`);
+    const products = await tx
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.ownerId, owner))
+      .for("update");
+    if (!products.length) return;
+
+    const existingMovements = await tx
+      .select({ productId: inventoryMovementsTable.productId })
+      .from(inventoryMovementsTable)
+      .where(
+        and(
+          eq(inventoryMovementsTable.ownerId, owner),
+          inArray(
+            inventoryMovementsTable.productId,
+            products.map((product) => product.id),
+          ),
+        ),
+      );
+    const alreadyTracked = new Set(
+      existingMovements.flatMap((movement) =>
+        movement.productId === null ? [] : [movement.productId],
+      ),
+    );
+    const untrackedProducts = products.filter(
+      (product) => !alreadyTracked.has(product.id),
+    );
+    if (!untrackedProducts.length) return;
+
+    const sales = await tx
+      .select()
+      .from(salesTable)
+      .where(eq(salesTable.ownerId, owner))
+      .orderBy(salesTable.createdAt, salesTable.id);
+    const saleLines = sales.length
+      ? await tx
+          .select()
+          .from(saleItemsTable)
+          .where(inArray(saleItemsTable.saleId, sales.map((sale) => sale.id)))
+      : [];
+    const untrackedIds = new Set(untrackedProducts.map((product) => product.id));
+    const linesBySale = new Map<
+      number,
+      Map<number, { productName: string; quantity: number }>
+    >();
+    const soldByProduct = new Map<number, number>();
+    for (const line of saleLines) {
+      if (!untrackedIds.has(line.productId)) continue;
+      const current = linesBySale.get(line.saleId) ?? new Map();
+      const existingLine = current.get(line.productId);
+      current.set(line.productId, {
+        productName: line.productName,
+        quantity: (existingLine?.quantity ?? 0) + line.quantity,
+      });
+      linesBySale.set(line.saleId, current);
+      soldByProduct.set(
+        line.productId,
+        (soldByProduct.get(line.productId) ?? 0) + line.quantity,
+      );
+    }
+
+    const balanceByProduct = new Map<number, number>();
+    const rows: Array<typeof inventoryMovementsTable.$inferInsert> = [];
+    for (const product of untrackedProducts) {
+      const openingQuantity =
+        product.quantity + (soldByProduct.get(product.id) ?? 0);
+      balanceByProduct.set(product.id, openingQuantity);
+      if (openingQuantity === 0) continue;
+      const firstSale = sales
+        .filter((sale) => linesBySale.get(sale.id)?.has(product.id))
+        .at(0);
+      const openingAt = firstSale
+        ? new Date(
+            Math.min(
+              product.createdAt.getTime(),
+              firstSale.createdAt.getTime() - 1,
+            ),
+          )
+        : product.createdAt;
+      rows.push({
+        ownerId: owner,
+        productId: product.id,
+        productName: product.name,
+        type: "opening",
+        quantity: openingQuantity,
+        reason: "رصيد افتتاحي قبل تفعيل سجل الحركة",
+        balanceBefore: 0,
+        balanceAfter: openingQuantity,
+        createdAt: openingAt,
+      });
+    }
+
+    for (const sale of sales) {
+      for (const [productId, line] of linesBySale.get(sale.id) ?? []) {
+        const balanceBefore = balanceByProduct.get(productId);
+        if (balanceBefore === undefined) continue;
+        const balanceAfter = balanceBefore - line.quantity;
+        rows.push({
+          ownerId: owner,
+          productId,
+          productName: line.productName,
+          type: "sale",
+          quantity: line.quantity,
+          reason: `بيع سابق رقم ${sale.id}`,
+          balanceBefore,
+          balanceAfter,
+          saleId: sale.id,
+          createdAt: sale.createdAt,
+        });
+        balanceByProduct.set(productId, balanceAfter);
+      }
+    }
+    if (rows.length) {
+      await tx.insert(inventoryMovementsTable).values(rows).onConflictDoNothing();
+    }
+  });
+
+  inventoryHistoryReady.add(owner);
 }
 
 async function seedDemoData(): Promise<void> {
@@ -189,6 +317,7 @@ router.use(async (req, res, next) => {
       }
       await seedPromise;
       res.locals.ownerId = "demo";
+      await backfillInventoryHistory("demo");
       next();
     } catch (error) {
       req.log.error({ err: error }, "Could not prepare demo data");
@@ -203,6 +332,7 @@ router.use(async (req, res, next) => {
     return;
   }
   res.locals.ownerId = userId;
+  await backfillInventoryHistory(userId);
   next();
 });
 

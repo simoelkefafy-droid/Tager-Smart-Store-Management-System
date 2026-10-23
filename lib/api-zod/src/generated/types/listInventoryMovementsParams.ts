@@ -5,23 +5,11 @@
  * API for Tager small-shop management
  * OpenAPI spec version: 0.1.0
  */
-import type { InventoryMovementType } from './inventoryMovementType';
+import type { ListInventoryMovementsType } from './listInventoryMovementsType';
 
 export type ListInventoryMovementsParams = {
-/**
- * @minimum 1
- */
-productId?: number;
-type?: InventoryMovementType;
+search?: string;
+type?: ListInventoryMovementsType;
 from?: Date;
 to?: Date;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
-/**
- * @minimum 0
- */
-offset?: number;
 };

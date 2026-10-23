@@ -21,4 +21,6 @@ export interface ProductInput {
   minStock: number;
   /** @nullable */
   supplierId?: number | null;
+  /** @maxLength 500 */
+  reason?: string;
 }

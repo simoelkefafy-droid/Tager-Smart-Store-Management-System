@@ -36,6 +36,8 @@ export interface ProductInput {
   minStock: number;
   /** @nullable */
   supplierId?: number | null;
+  /** @maxLength 500 */
+  reason?: string;
 }
 
 export interface Supplier {
@@ -85,8 +87,9 @@ export type InventoryMovementType = typeof InventoryMovementType[keyof typeof In
 
 
 export const InventoryMovementType = {
-  in: 'in',
-  out: 'out',
+  opening: 'opening',
+  sale: 'sale',
+  supply: 'supply',
   adjustment: 'adjustment',
 } as const;
 
@@ -96,29 +99,39 @@ export interface InventoryMovement {
   productId: number | null;
   productName: string;
   type: InventoryMovementType;
+  /** @minimum 1 */
   quantity: number;
-  previousQuantity: number;
-  newQuantity: number;
   reason: string;
+  /** @minimum 0 */
+  balanceBefore: number;
+  /** @minimum 0 */
+  balanceAfter: number;
   /** @nullable */
   saleId: number | null;
+  /** @nullable */
+  supplierId: number | null;
+  /** @nullable */
+  supplierName: string | null;
   createdAt: string;
 }
 
-export interface InventoryMovementInput {
+export interface InventorySupplyInput {
   /** @minimum 1 */
   productId: number;
-  type: InventoryMovementType;
-  /**
-     * For adjustment
-     * @minimum 0
-     */
+  /** @nullable */
+  supplierId?: number | null;
+  /** @minimum 1 */
   quantity: number;
   /**
      * @minLength 1
-     * @maxLength 240
+     * @maxLength 500
      */
   reason: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  requestId: string;
 }
 
 export interface Dashboard {
@@ -160,23 +173,21 @@ limit?: number;
 };
 
 export type ListInventoryMovementsParams = {
-/**
- * @minimum 1
- */
-productId?: number;
-type?: InventoryMovementType;
+search?: string;
+type?: ListInventoryMovementsType;
 from?: string;
 to?: string;
-/**
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
-/**
- * @minimum 0
- */
-offset?: number;
 };
+
+export type ListInventoryMovementsType = typeof ListInventoryMovementsType[keyof typeof ListInventoryMovementsType];
+
+
+export const ListInventoryMovementsType = {
+  opening: 'opening',
+  sale: 'sale',
+  supply: 'supply',
+  adjustment: 'adjustment',
+} as const;
 
 export type GetReportsParams = {
 from: string;

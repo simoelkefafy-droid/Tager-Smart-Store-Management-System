@@ -6,8 +6,8 @@ import {
   eq,
   gte,
   inArray,
+  ilike,
   lt,
-  sql,
 } from "drizzle-orm";
 import {
   db,
@@ -18,8 +18,6 @@ import {
   suppliersTable,
 } from "@workspace/db";
 import {
-  CreateInventoryMovementBody,
-  CreateInventoryMovementResponse,
   CreateProductBody,
   CreateProductResponse,
   CreateSaleBody,
@@ -31,9 +29,9 @@ import {
   GetDashboardResponse,
   GetReportsQueryParams,
   GetReportsResponse,
-  ListProductsResponse,
   ListInventoryMovementsQueryParams,
   ListInventoryMovementsResponse,
+  ListProductsResponse,
   ListSalesQueryParams,
   ListSalesResponse,
   ListSuppliersResponse,
@@ -43,6 +41,8 @@ import {
   UpdateSupplierBody,
   UpdateSupplierParams,
   UpdateSupplierResponse,
+  CreateInventorySupplyBody,
+  CreateInventorySupplyResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -56,120 +56,13 @@ class SaleError extends Error {
   }
 }
 
-class InventoryMovementError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-
-const inventoryHistoryReady = new Set<string>();
-
-async function ensureInventoryHistory(owner: string): Promise<void> {
-  if (inventoryHistoryReady.has(owner)) return;
-  await db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${owner}))`);
-    const [existing] = await tx
-      .select({ id: inventoryMovementsTable.id })
-      .from(inventoryMovementsTable)
-      .where(eq(inventoryMovementsTable.ownerId, owner))
-      .limit(1);
-    if (existing) return;
-
-    const products = await tx
-      .select()
-      .from(productsTable)
-      .where(eq(productsTable.ownerId, owner));
-    const sales = await tx
-      .select()
-      .from(salesTable)
-      .where(eq(salesTable.ownerId, owner))
-      .orderBy(salesTable.createdAt);
-    const saleLines = sales.length
-      ? await tx
-          .select()
-          .from(saleItemsTable)
-          .where(inArray(saleItemsTable.saleId, sales.map((sale) => sale.id)))
-      : [];
-    const soldByProduct = new Map<number, number>();
-    for (const line of saleLines) {
-      soldByProduct.set(
-        line.productId,
-        (soldByProduct.get(line.productId) ?? 0) + line.quantity,
-      );
-    }
-    const balances = new Map<number, number>();
-    const openingDate = sales.length
-      ? new Date(Math.min(...sales.map((sale) => sale.createdAt.getTime())) - 1)
-      : null;
-    const rows: Array<typeof inventoryMovementsTable.$inferInsert> = [];
-    for (const product of products) {
-      const openingQuantity = product.quantity + (soldByProduct.get(product.id) ?? 0);
-      balances.set(product.id, openingQuantity);
-      if (openingQuantity > 0) {
-        rows.push({
-          ownerId: owner,
-          productId: product.id,
-          productName: product.name,
-          type: "in",
-          quantity: openingQuantity,
-          previousQuantity: 0,
-          newQuantity: openingQuantity,
-          reason: "رصيد افتتاحي قبل تفعيل سجل الحركة",
-          createdAt: openingDate ?? product.createdAt,
-        });
-      }
-    }
-    for (const sale of sales) {
-      const saleProducts = new Map<number, (typeof saleLines)[number]>();
-      for (const line of saleLines) {
-        if (line.saleId !== sale.id) continue;
-        const combined = saleProducts.get(line.productId);
-        if (combined) {
-          saleProducts.set(line.productId, {
-            ...combined,
-            quantity: combined.quantity + line.quantity,
-          });
-        } else {
-          saleProducts.set(line.productId, line);
-        }
-      }
-      for (const [productId, line] of saleProducts) {
-        const previousQuantity = balances.get(productId);
-        if (previousQuantity === undefined) continue;
-        const newQuantity = Math.max(0, previousQuantity - line.quantity);
-        rows.push({
-          ownerId: owner,
-          productId,
-          productName: line.productName,
-          type: "out",
-          quantity: line.quantity,
-          previousQuantity,
-          newQuantity,
-          reason: `بيع سابق رقم #${sale.id}`,
-          saleId: sale.id,
-          createdAt: sale.createdAt,
-        });
-        balances.set(productId, newQuantity);
-      }
-    }
-    if (rows.length) await tx.insert(inventoryMovementsTable).values(rows);
-  });
-  inventoryHistoryReady.add(owner);
-}
-
 async function seedDemoData(): Promise<void> {
   const existing = await db
     .select({ id: productsTable.id })
     .from(productsTable)
     .where(eq(productsTable.ownerId, "demo"))
     .limit(1);
-  if (existing.length > 0) {
-    await ensureInventoryHistory("demo");
-    return;
-  }
+  if (existing.length > 0) return;
 
   const [supplierA, supplierB] = await db
     .insert(suppliersTable)
@@ -283,7 +176,6 @@ async function seedDemoData(): Promise<void> {
       })),
     );
   }
-  await ensureInventoryHistory("demo");
 }
 
 router.use(async (req, res, next) => {
@@ -310,7 +202,6 @@ router.use(async (req, res, next) => {
     return;
   }
   res.locals.ownerId = userId;
-  await ensureInventoryHistory(userId);
   next();
 });
 
@@ -399,21 +290,22 @@ router.post("/products", async (req, res): Promise<void> => {
       return;
     }
   }
+  const { reason, ...productData } = parsed.data;
   const product = await db.transaction(async (tx) => {
     const [created] = await tx
       .insert(productsTable)
-      .values({ ...parsed.data, supplierId, ownerId: owner })
+      .values({ ...productData, supplierId, ownerId: owner })
       .returning();
     if (created.quantity > 0) {
       await tx.insert(inventoryMovementsTable).values({
         ownerId: owner,
         productId: created.id,
         productName: created.name,
-        type: "in",
+        type: "opening",
         quantity: created.quantity,
-        previousQuantity: 0,
-        newQuantity: created.quantity,
-        reason: "رصيد افتتاحي عند إنشاء المنتج",
+        reason: reason?.trim() || "الرصيد الافتتاحي عند إضافة المنتج",
+        balanceBefore: 0,
+        balanceAfter: created.quantity,
       });
     }
     return created;
@@ -445,32 +337,49 @@ router.patch("/products/:id", async (req, res): Promise<void> => {
       return;
     }
   }
-  const product = await db.transaction(async (tx) => {
-    const [current] = await tx
-      .select()
-      .from(productsTable)
-      .where(and(eq(productsTable.id, params.data.id), eq(productsTable.ownerId, owner)))
-      .for("update");
-    if (!current) return null;
-    const [updated] = await tx
-      .update(productsTable)
-      .set({ ...parsed.data, supplierId })
-      .where(and(eq(productsTable.id, params.data.id), eq(productsTable.ownerId, owner)))
-      .returning();
-    if (current.quantity !== updated.quantity) {
-      await tx.insert(inventoryMovementsTable).values({
-        ownerId: owner,
-        productId: updated.id,
-        productName: updated.name,
-        type: "adjustment",
-        quantity: updated.quantity - current.quantity,
-        previousQuantity: current.quantity,
-        newQuantity: updated.quantity,
-        reason: "تعديل الرصيد من صفحة المنتجات",
-      });
+  const { reason, ...productData } = parsed.data;
+  let product;
+  try {
+    product = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select()
+        .from(productsTable)
+        .where(and(eq(productsTable.id, params.data.id), eq(productsTable.ownerId, owner)))
+        .for("update");
+      if (!current) return null;
+      if (current.quantity !== productData.quantity) {
+        const cleanReason = reason?.trim();
+        if (!cleanReason || cleanReason.length > 500) {
+          throw new SaleError(400, "اكتب سبباً واضحاً لتسوية كمية المخزون");
+        }
+      }
+      const [updated] = await tx
+        .update(productsTable)
+        .set({ ...productData, supplierId })
+        .where(and(eq(productsTable.id, params.data.id), eq(productsTable.ownerId, owner)))
+        .returning();
+      if (updated.quantity !== current.quantity) {
+        const difference = updated.quantity - current.quantity;
+        await tx.insert(inventoryMovementsTable).values({
+          ownerId: owner,
+          productId: updated.id,
+          productName: updated.name,
+          type: "adjustment",
+          quantity: Math.abs(difference),
+          reason: reason!.trim(),
+          balanceBefore: current.quantity,
+          balanceAfter: updated.quantity,
+        });
+      }
+      return updated;
+    });
+  } catch (error) {
+    if (error instanceof SaleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
     }
-    return updated;
-  });
+    throw error;
+  }
   if (!product) {
     res.status(404).json({ error: "المنتج غير موجود" });
     return;
@@ -584,6 +493,177 @@ router.get("/sales", async (req, res): Promise<void> => {
   res.json(ListSalesResponse.parse(sales));
 });
 
+router.get("/inventory-movements", async (req, res): Promise<void> => {
+  const readDate = (value: unknown): Date | undefined => {
+    if (value === undefined) return undefined;
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return undefined;
+    }
+    const date = new Date(`${value}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+      return undefined;
+    }
+    return date;
+  };
+  const parsedFrom = readDate(req.query.from);
+  const parsedTo = readDate(req.query.to);
+  if (
+    (req.query.from !== undefined && !parsedFrom) ||
+    (req.query.to !== undefined && !parsedTo)
+  ) {
+    res.status(400).json({ error: "صيغة التاريخ غير صحيحة" });
+    return;
+  }
+  const parsed = ListInventoryMovementsQueryParams.safeParse({
+    search: req.query.search,
+    type: req.query.type,
+    from: parsedFrom,
+    to: parsedTo,
+  });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const { from, to, search, type } = parsed.data;
+  if (from && to && from > to) {
+    res.status(400).json({ error: "تاريخ البداية يجب أن يسبق تاريخ النهاية" });
+    return;
+  }
+  const filters = [eq(inventoryMovementsTable.ownerId, ownerId(res))];
+  if (type) filters.push(eq(inventoryMovementsTable.type, type));
+  if (search?.trim()) {
+    filters.push(ilike(inventoryMovementsTable.productName, `%${search.trim()}%`));
+  }
+  if (from) filters.push(gte(inventoryMovementsTable.createdAt, from));
+  if (to) {
+    const toExclusive = new Date(to);
+    toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
+    filters.push(lt(inventoryMovementsTable.createdAt, toExclusive));
+  }
+  const movements = await db
+    .select({
+      id: inventoryMovementsTable.id,
+      productId: inventoryMovementsTable.productId,
+      productName: inventoryMovementsTable.productName,
+      type: inventoryMovementsTable.type,
+      quantity: inventoryMovementsTable.quantity,
+      reason: inventoryMovementsTable.reason,
+      balanceBefore: inventoryMovementsTable.balanceBefore,
+      balanceAfter: inventoryMovementsTable.balanceAfter,
+      saleId: inventoryMovementsTable.saleId,
+      supplierId: inventoryMovementsTable.supplierId,
+      supplierName: suppliersTable.name,
+      createdAt: inventoryMovementsTable.createdAt,
+    })
+    .from(inventoryMovementsTable)
+    .leftJoin(suppliersTable, eq(inventoryMovementsTable.supplierId, suppliersTable.id))
+    .where(and(...filters))
+    .orderBy(desc(inventoryMovementsTable.createdAt), desc(inventoryMovementsTable.id));
+  res.json(ListInventoryMovementsResponse.parse(movements));
+});
+
+router.post("/inventory-movements", async (req, res): Promise<void> => {
+  const parsed = CreateInventorySupplyBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const owner = ownerId(res);
+  const { productId, supplierId: rawSupplierId, quantity, requestId } = parsed.data;
+  const supplierId = rawSupplierId ?? null;
+  const reason = parsed.data.reason.trim();
+  if (!reason) {
+    res.status(400).json({ error: "سبب التوريد مطلوب" });
+    return;
+  }
+
+  try {
+    const movement = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(inventoryMovementsTable)
+        .where(
+          and(
+            eq(inventoryMovementsTable.ownerId, owner),
+            eq(inventoryMovementsTable.requestId, requestId),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        if (
+          existing.productId !== productId ||
+          existing.supplierId !== supplierId ||
+          existing.quantity !== quantity ||
+          existing.reason !== reason
+        ) {
+          throw new SaleError(409, "معرّف الطلب مستخدم لبيانات توريد مختلفة");
+        }
+        const [supplier] = existing.supplierId
+          ? await tx
+              .select({ name: suppliersTable.name })
+              .from(suppliersTable)
+              .where(eq(suppliersTable.id, existing.supplierId))
+          : [];
+        return { ...existing, supplierName: supplier?.name ?? null };
+      }
+
+      if (supplierId !== null) {
+        const [supplier] = await tx
+          .select({ id: suppliersTable.id, name: suppliersTable.name })
+          .from(suppliersTable)
+          .where(and(eq(suppliersTable.id, supplierId), eq(suppliersTable.ownerId, owner)))
+          .for("share");
+        if (!supplier) throw new SaleError(400, "المورد المحدد غير موجود");
+      }
+      const [product] = await tx
+        .select()
+        .from(productsTable)
+        .where(and(eq(productsTable.id, productId), eq(productsTable.ownerId, owner)))
+        .for("update");
+      if (!product) throw new SaleError(400, "المنتج المحدد غير موجود");
+
+      const balanceAfter = product.quantity + quantity;
+      await tx
+        .update(productsTable)
+        .set({ quantity: balanceAfter })
+        .where(and(eq(productsTable.id, product.id), eq(productsTable.ownerId, owner)));
+      const [created] = await tx
+        .insert(inventoryMovementsTable)
+        .values({
+          ownerId: owner,
+          productId: product.id,
+          productName: product.name,
+          type: "supply",
+          quantity,
+          reason,
+          balanceBefore: product.quantity,
+          balanceAfter,
+          supplierId,
+          requestId,
+        })
+        .returning();
+      const [supplier] = supplierId
+        ? await tx
+            .select({ name: suppliersTable.name })
+            .from(suppliersTable)
+            .where(eq(suppliersTable.id, supplierId))
+        : [];
+      return { ...created, supplierName: supplier?.name ?? null };
+    });
+    res.status(201).json(CreateInventorySupplyResponse.parse(movement));
+  } catch (error) {
+    if (error instanceof SaleError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    if ((error as { code?: string }).code === "23505") {
+      res.status(409).json({ error: "تم تسجيل هذا الطلب من قبل" });
+      return;
+    }
+    throw error;
+  }
+});
+
 router.post("/sales", async (req, res): Promise<void> => {
   const parsed = CreateSaleBody.safeParse(req.body);
   if (!parsed.success) {
@@ -604,8 +684,8 @@ router.post("/sales", async (req, res): Promise<void> => {
         unitPrice: number;
         lineTotal: number;
         unitCost: number;
-        previousQuantity: number;
-        newQuantity: number;
+        balanceBefore: number;
+        balanceAfter: number;
       }> = [];
       for (const [productId, quantity] of quantities) {
         const [product] = await tx
@@ -630,8 +710,8 @@ router.post("/sales", async (req, res): Promise<void> => {
           unitPrice: product.sellingPrice,
           lineTotal: product.sellingPrice * quantity,
           unitCost: product.purchasePrice,
-          previousQuantity: product.quantity,
-          newQuantity: product.quantity - quantity,
+          balanceBefore: product.quantity,
+          balanceAfter: product.quantity - quantity,
         });
       }
       const roundMoney = (value: number) => Math.round(value * 100) / 100;
@@ -647,9 +727,14 @@ router.post("/sales", async (req, res): Promise<void> => {
         .values({ ownerId: owner, total, profit })
         .returning();
       await tx.insert(saleItemsTable).values(
-        saleLines.map(({ previousQuantity: _previous, newQuantity: _new, ...line }) => ({
+        saleLines.map((line) => ({
           saleId: created.id,
-          ...line,
+          productId: line.productId,
+          productName: line.productName,
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          unitCost: line.unitCost,
+          lineTotal: line.lineTotal,
         })),
       );
       await tx.insert(inventoryMovementsTable).values(
@@ -657,157 +742,19 @@ router.post("/sales", async (req, res): Promise<void> => {
           ownerId: owner,
           productId: line.productId,
           productName: line.productName,
-          type: "out" as const,
+          type: "sale" as const,
           quantity: line.quantity,
-          previousQuantity: line.previousQuantity,
-          newQuantity: line.newQuantity,
-          reason: `بيع رقم #${created.id}`,
+          reason: `بيع رقم ${created.id}`,
+          balanceBefore: line.balanceBefore,
+          balanceAfter: line.balanceAfter,
           saleId: created.id,
-          createdAt: created.createdAt,
         })),
       );
-      return {
-        ...created,
-        items: saleLines.map(({ previousQuantity: _previous, newQuantity: _new, ...line }) => line),
-      };
+      return { ...created, items: saleLines };
     });
     res.status(201).json(CreateSaleResponse.parse(sale));
   } catch (error) {
     if (error instanceof SaleError) {
-      res.status(error.status).json({ error: error.message });
-      return;
-    }
-    throw error;
-  }
-});
-
-router.get("/inventory-movements", async (req, res): Promise<void> => {
-  const readDate = (value: unknown): Date | undefined => {
-    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return undefined;
-    }
-    const date = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
-      return undefined;
-    }
-    return date;
-  };
-  const fromValue = req.query.from;
-  const toValue = req.query.to;
-  const from = fromValue === undefined ? undefined : readDate(fromValue);
-  const to = toValue === undefined ? undefined : readDate(toValue);
-  if ((fromValue !== undefined && !from) || (toValue !== undefined && !to)) {
-    res.status(400).json({ error: "أدخل تاريخاً صالحاً لتصفية الحركات" });
-    return;
-  }
-  const parsed = ListInventoryMovementsQueryParams.safeParse({
-    productId: req.query.productId,
-    type: req.query.type,
-    from,
-    to,
-    limit: req.query.limit,
-    offset: req.query.offset,
-  });
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  if (parsed.data.from && parsed.data.to && parsed.data.from > parsed.data.to) {
-    res.status(400).json({ error: "تاريخ البداية يجب أن يسبق تاريخ النهاية" });
-    return;
-  }
-  const conditions = [eq(inventoryMovementsTable.ownerId, ownerId(res))];
-  if (parsed.data.productId !== undefined) {
-    conditions.push(eq(inventoryMovementsTable.productId, parsed.data.productId));
-  }
-  if (parsed.data.type) {
-    conditions.push(eq(inventoryMovementsTable.type, parsed.data.type));
-  }
-  if (parsed.data.from) conditions.push(gte(inventoryMovementsTable.createdAt, parsed.data.from));
-  if (parsed.data.to) {
-    const toExclusive = new Date(parsed.data.to);
-    toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
-    conditions.push(lt(inventoryMovementsTable.createdAt, toExclusive));
-  }
-  const movements = await db
-    .select()
-    .from(inventoryMovementsTable)
-    .where(and(...conditions))
-    .orderBy(desc(inventoryMovementsTable.createdAt), desc(inventoryMovementsTable.id))
-    .limit(parsed.data.limit)
-    .offset(parsed.data.offset);
-  res.json(ListInventoryMovementsResponse.parse(movements));
-});
-
-router.post("/inventory-movements", async (req, res): Promise<void> => {
-  const parsed = CreateInventoryMovementBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { productId, type, quantity } = parsed.data;
-  const reason = parsed.data.reason.trim();
-  if (!reason) {
-    res.status(400).json({ error: "اكتب سبب حركة المخزون" });
-    return;
-  }
-  if (type !== "adjustment" && quantity < 1) {
-    res.status(400).json({ error: "أدخل كمية أكبر من صفر" });
-    return;
-  }
-  const owner = ownerId(res);
-  try {
-    const movement = await db.transaction(async (tx) => {
-      const [product] = await tx
-        .select()
-        .from(productsTable)
-        .where(and(eq(productsTable.id, productId), eq(productsTable.ownerId, owner)))
-        .for("update");
-      if (!product) throw new InventoryMovementError(404, "المنتج غير موجود");
-
-      const previousQuantity = product.quantity;
-      const newQuantity =
-        type === "in"
-          ? previousQuantity + quantity
-          : type === "out"
-            ? previousQuantity - quantity
-            : quantity;
-      if (type === "out" && quantity > previousQuantity) {
-        throw new InventoryMovementError(
-          409,
-          `الكمية المتاحة من ${product.name} هي ${previousQuantity} فقط`,
-        );
-      }
-      const recordedQuantity =
-        type === "adjustment" ? newQuantity - previousQuantity : quantity;
-      if (newQuantity < 0) {
-        throw new InventoryMovementError(400, "لا يمكن أن يصبح المخزون أقل من صفر");
-      }
-      if (newQuantity === previousQuantity) {
-        throw new InventoryMovementError(400, "الكمية الجديدة مطابقة للكمية الحالية");
-      }
-      await tx
-        .update(productsTable)
-        .set({ quantity: newQuantity })
-        .where(and(eq(productsTable.id, productId), eq(productsTable.ownerId, owner)));
-      const [created] = await tx
-        .insert(inventoryMovementsTable)
-        .values({
-          ownerId: owner,
-          productId: product.id,
-          productName: product.name,
-          type,
-          quantity: recordedQuantity,
-          previousQuantity,
-          newQuantity,
-          reason,
-        })
-        .returning();
-      return created;
-    });
-    res.status(201).json(CreateInventoryMovementResponse.parse(movement));
-  } catch (error) {
-    if (error instanceof InventoryMovementError) {
       res.status(error.status).json({ error: error.message });
       return;
     }

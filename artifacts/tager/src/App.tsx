@@ -10,6 +10,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   getGetDashboardQueryKey, getGetReportsQueryKey, getListProductsQueryKey,
   getListSalesQueryKey, getListSuppliersQueryKey,
+  getListInventoryMovementsQueryKey,
   useCreateProduct, useCreateSale, useCreateSupplier, useDeleteProduct,
   useDeleteSupplier, useGetDashboard, useGetReports, useListProducts,
   useListSales, useListSuppliers, useUpdateProduct, useUpdateSupplier,
@@ -22,6 +23,7 @@ import {
   Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users,
 } from 'lucide-react';
 import { Route, Switch, Router as WouterRouter, Link, Redirect, useLocation } from 'wouter';
+import { InventoryMovementsPage } from '@/pages/inventory-movements';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -95,11 +97,12 @@ function SignUpPage() {
 }
 
 const navItems = [
-  { href: '/app', label: 'نظرة عامة', icon: Home },
-  { href: '/products', label: 'المنتجات والمخزون', icon: Package },
-  { href: '/sales', label: 'المبيعات', icon: ShoppingCart },
-  { href: '/suppliers', label: 'الموردون', icon: Truck },
-  { href: '/reports', label: 'التقارير', icon: BarChart3 },
+  { href: '/app', label: 'نظرة عامة', mobileLabel: 'الرئيسية', icon: Home },
+  { href: '/products', label: 'المنتجات والمخزون', mobileLabel: 'المنتجات', icon: Package },
+  { href: '/sales', label: 'المبيعات', mobileLabel: 'المبيعات', icon: ShoppingCart },
+  { href: '/suppliers', label: 'الموردون', mobileLabel: 'الموردون', icon: Truck },
+  { href: '/inventory-movements', label: 'سجل حركة المخزون', mobileLabel: 'المخزون', icon: Activity },
+  { href: '/reports', label: 'التقارير', mobileLabel: 'التقارير', icon: BarChart3 },
 ];
 
 function Shell({ children }: { children: ReactNode }) {
@@ -145,8 +148,8 @@ function Shell({ children }: { children: ReactNode }) {
       </header>
       <main className="mobile-content mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">{children}</main>
     </div>
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-[#e1e4df] bg-[#fffefa]/95 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
-      {navItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex flex-col items-center gap-1 py-1 text-[10px] ${location === href ? 'font-bold text-[#286247]' : 'text-[#778391]'}`}><Icon size={19} strokeWidth={location === href ? 2.2 : 1.8} /><span>{label}</span></Link>)}
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-[#e1e4df] bg-[#fffefa]/95 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
+      {navItems.map(({ href, mobileLabel, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex flex-col items-center gap-1 py-1 text-[9px] ${location === href ? 'font-bold text-[#286247]' : 'text-[#778391]'}`}><Icon size={18} strokeWidth={location === href ? 2.2 : 1.8} /><span className="whitespace-nowrap">{mobileLabel}</span></Link>)}
     </nav>
   </div>;
 }
@@ -221,11 +224,12 @@ function ProductPage() {
   const [form, setForm] = useState<Product | null | false>(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
   const categories = [...new Set(products.map(p => p.category))];
   const filtered = products.filter(p => (category === 'all' || p.category === category) && `${p.name} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
-  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() })]); };
+  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() })]); };
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError('');
     const f = new FormData(e.currentTarget);
-    const payload = { name: String(f.get('name')), category: String(f.get('category')), purchasePrice: Number(f.get('purchasePrice')), sellingPrice: Number(f.get('sellingPrice')), quantity: Number(f.get('quantity')), minStock: Number(f.get('minStock')), supplierId: f.get('supplierId') ? Number(f.get('supplierId')) : null };
+    const reason = String(f.get('reason') || '').trim();
+    const payload = { name: String(f.get('name')), category: String(f.get('category')), purchasePrice: Number(f.get('purchasePrice')), sellingPrice: Number(f.get('sellingPrice')), quantity: Number(f.get('quantity')), minStock: Number(f.get('minStock')), supplierId: f.get('supplierId') ? Number(f.get('supplierId')) : null, ...(reason ? { reason } : {}) };
     try { if (form) await update.mutateAsync({ id: form.id, data: payload }); else await create.mutateAsync({ data: payload }); await refresh(); setNotice(form ? 'تم تحديث بيانات المنتج.' : 'تمت إضافة المنتج بنجاح.'); setForm(false); } catch (err) { setError(getErrorMessage(err)); }
   };
   const deleteItem = async (p: Product) => { if (!window.confirm(`حذف المنتج «${p.name}»؟`)) return; try { await remove.mutateAsync({ id: p.id }); await refresh(); setNotice('تم حذف المنتج.'); setError(''); } catch (e) { setError(getErrorMessage(e)); } };
@@ -247,6 +251,7 @@ function ProductPage() {
       <Field label="سعر الشراء (ج.م)" name="purchasePrice" type="number" min="0" step="0.01" required defaultValue={form?.purchasePrice ?? ''} data-testid="input-product-cost" />
       <Field label="سعر البيع (ج.م)" name="sellingPrice" type="number" min="0" step="0.01" required defaultValue={form?.sellingPrice ?? ''} data-testid="input-product-price" />
       <Field label="الكمية الحالية" name="quantity" type="number" min="0" required defaultValue={form?.quantity ?? 0} data-testid="input-product-quantity" />
+       <Field label={form ? 'سبب تسوية الكمية (مطلوب عند تغييرها)' : 'سبب الرصيد الافتتاحي (اختياري)'} name="reason" maxLength={500} defaultValue="" placeholder={form ? 'مثال: جرد فعلي للمخزون' : 'مثال: رصيد بداية التشغيل'} data-testid="input-product-stock-reason" />
       <Field label="حد المخزون الأدنى" name="minStock" type="number" min="0" required defaultValue={form?.minStock ?? 5} data-testid="input-product-min-stock" />
       <SelectField label="المورد" name="supplierId" defaultValue={form?.supplierId || ''} data-testid="select-product-supplier"><option value="">بدون مورد</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</SelectField>
       {error && <div className="sm:col-span-2 text-sm text-[#b44c43]" data-testid="status-product-error">{error}</div>}
@@ -396,6 +401,7 @@ function ProductsRoute() { return <ProtectedPage><ProductPage /></ProtectedPage>
 function SalesRoute() { return <ProtectedPage><SalesPage /></ProtectedPage>; }
 function SuppliersRoute() { return <ProtectedPage><SupplierPage /></ProtectedPage>; }
 function ReportsRoute() { return <ProtectedPage><ReportsPage /></ProtectedPage>; }
+function InventoryMovementsRoute() { const { demo } = useDemo(); return <ProtectedPage><InventoryMovementsPage demo={demo} /></ProtectedPage>; }
 function NotFoundPage() { return <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#f7f6f1] p-6 text-center" dir="rtl"><div className="text-6xl font-bold text-[#286247]">٤٠٤</div><h1 className="mt-4 text-2xl font-bold">الصفحة غير موجودة</h1><p className="text-sm text-[#778391]">قد يكون الرابط غير صحيح أو أن الصفحة نُقلت.</p><Link href="/" className="mt-4 rounded-xl bg-[#286247] px-5 py-3 text-sm font-bold text-white" data-testid="link-not-found-home">العودة للرئيسية</Link></div>; }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
@@ -417,6 +423,7 @@ function RoutedApp() {
       <Route path="/products" component={ProductsRoute} />
       <Route path="/sales" component={SalesRoute} />
       <Route path="/suppliers" component={SuppliersRoute} />
+      <Route path="/inventory-movements" component={InventoryMovementsRoute} />
       <Route path="/reports" component={ReportsRoute} />
       <Route component={NotFoundPage} />
     </Switch></RoutedErrorBoundary><Toaster /></DemoProvider></TooltipProvider></QueryClientProvider>

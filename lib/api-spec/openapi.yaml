@@ -219,23 +219,19 @@ paths:
       summary: List inventory movements
       parameters:
         - in: query
-          name: productId
-          schema: { type: integer, minimum: 1 }
+          name: search
+          schema: { type: string }
         - in: query
           name: type
-          schema: { $ref: "#/components/schemas/InventoryMovementType" }
+          schema:
+            type: string
+            enum: [opening, sale, supply, adjustment]
         - in: query
           name: from
           schema: { type: string, format: date }
         - in: query
           name: to
           schema: { type: string, format: date }
-        - in: query
-          name: limit
-          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
-        - in: query
-          name: offset
-          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
           description: Inventory movement history
@@ -245,26 +241,24 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/InventoryMovement" }
     post:
-      operationId: createInventoryMovement
+      operationId: createInventorySupply
       tags: [tager]
-      summary: Add stock, remove stock, or reconcile physical stock
+      summary: Record inventory supply
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/InventoryMovementInput" }
+            schema: { $ref: "#/components/schemas/InventorySupplyInput" }
       responses:
         "201":
-          description: Inventory movement recorded
+          description: Supply recorded
           content:
             application/json:
               schema: { $ref: "#/components/schemas/InventoryMovement" }
         "400":
-          description: Invalid movement
-        "404":
-          description: Product not found
+          description: Invalid supply
         "409":
-          description: Insufficient stock
+          description: Replayed request
   /dashboard:
     get:
       operationId: getDashboard
@@ -334,6 +328,7 @@ components:
         quantity: { type: integer, minimum: 0 }
         minStock: { type: integer, minimum: 0 }
         supplierId: { type: ["integer", "null"] }
+        reason: { type: string, maxLength: 500 }
     Supplier:
       type: object
       required: [id, name, phone, products]
@@ -386,31 +381,31 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/SaleLine"
-    InventoryMovementType:
-      type: string
-      enum: [in, out, adjustment]
     InventoryMovement:
       type: object
-      required: [id, productId, productName, type, quantity, previousQuantity, newQuantity, reason, saleId, createdAt]
+      required: [id, productId, productName, type, quantity, reason, balanceBefore, balanceAfter, saleId, supplierId, supplierName, createdAt]
       properties:
         id: { type: integer }
         productId: { type: ["integer", "null"] }
         productName: { type: string }
-        type: { $ref: "#/components/schemas/InventoryMovementType" }
-        quantity: { type: integer }
-        previousQuantity: { type: integer }
-        newQuantity: { type: integer }
+        type: { type: string, enum: [opening, sale, supply, adjustment] }
+        quantity: { type: integer, minimum: 1 }
         reason: { type: string }
+        balanceBefore: { type: integer, minimum: 0 }
+        balanceAfter: { type: integer, minimum: 0 }
         saleId: { type: ["integer", "null"] }
+        supplierId: { type: ["integer", "null"] }
+        supplierName: { type: ["string", "null"] }
         createdAt: { type: string, format: date-time }
-    InventoryMovementInput:
+    InventorySupplyInput:
       type: object
-      required: [productId, type, quantity, reason]
+      required: [productId, quantity, reason, requestId]
       properties:
         productId: { type: integer, minimum: 1 }
-        type: { $ref: "#/components/schemas/InventoryMovementType" }
-        quantity: { type: integer, minimum: 0, description: For adjustment, this is the physical count after stocktaking. }
-        reason: { type: string, minLength: 1, maxLength: 240 }
+        supplierId: { type: ["integer", "null"] }
+        quantity: { type: integer, minimum: 1 }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+        requestId: { type: string, minLength: 1, maxLength: 100 }
     Dashboard:
       type: object
       required: [totalSales, totalProfit, productsCount, lowStockCount, lowStockProducts, recentSales]

@@ -13,11 +13,18 @@ export interface InventoryMovement {
   productId: number | null;
   productName: string;
   type: InventoryMovementType;
+  /** @minimum 1 */
   quantity: number;
-  previousQuantity: number;
-  newQuantity: number;
   reason: string;
+  /** @minimum 0 */
+  balanceBefore: number;
+  /** @minimum 0 */
+  balanceAfter: number;
   /** @nullable */
   saleId: number | null;
+  /** @nullable */
+  supplierId: number | null;
+  /** @nullable */
+  supplierName: string | null;
   createdAt: Date;
 }

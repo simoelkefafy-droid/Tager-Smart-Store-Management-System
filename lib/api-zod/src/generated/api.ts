@@ -46,6 +46,8 @@ export const createProductBodyQuantityMin = 0;
 
 export const createProductBodyMinStockMin = 0;
 
+export const createProductBodyReasonMax = 500;
+
 
 
 export const CreateProductBody = zod.object({
@@ -55,7 +57,8 @@ export const CreateProductBody = zod.object({
   "sellingPrice": zod.number().min(createProductBodySellingPriceMin),
   "quantity": zod.number().int().min(createProductBodyQuantityMin),
   "minStock": zod.number().int().min(createProductBodyMinStockMin),
-  "supplierId": zod.number().int().nullish()
+  "supplierId": zod.number().int().nullish(),
+  "reason": zod.string().max(createProductBodyReasonMax).optional()
 })
 
 export const CreateProductResponse = zod.object({
@@ -87,6 +90,8 @@ export const updateProductBodyQuantityMin = 0;
 
 export const updateProductBodyMinStockMin = 0;
 
+export const updateProductBodyReasonMax = 500;
+
 
 
 export const UpdateProductBody = zod.object({
@@ -96,7 +101,8 @@ export const UpdateProductBody = zod.object({
   "sellingPrice": zod.number().min(updateProductBodySellingPriceMin),
   "quantity": zod.number().int().min(updateProductBodyQuantityMin),
   "minStock": zod.number().int().min(updateProductBodyMinStockMin),
-  "supplierId": zod.number().int().nullish()
+  "supplierId": zod.number().int().nullish(),
+  "reason": zod.string().max(updateProductBodyReasonMax).optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -249,66 +255,75 @@ export const CreateSaleResponse = zod.object({
 /**
  * @summary List inventory movements
  */
-
-export const listInventoryMovementsQueryLimitDefault = 50;
-export const listInventoryMovementsQueryLimitMax = 100;
-
-export const listInventoryMovementsQueryOffsetDefault = 0;
-export const listInventoryMovementsQueryOffsetMin = 0;
-
-
-
 export const ListInventoryMovementsQueryParams = zod.object({
-  "productId": zod.coerce.number().int().min(1).optional(),
-  "type": zod.enum(['in', 'out', 'adjustment']).optional(),
+  "search": zod.coerce.string().optional(),
+  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']).optional(),
   "from": zod.date().optional(),
-  "to": zod.date().optional(),
-  "limit": zod.coerce.number().int().min(1).max(listInventoryMovementsQueryLimitMax).default(listInventoryMovementsQueryLimitDefault),
-  "offset": zod.coerce.number().int().min(listInventoryMovementsQueryOffsetMin).default(listInventoryMovementsQueryOffsetDefault)
+  "to": zod.date().optional()
 })
+
+
+export const listInventoryMovementsResponseBalanceBeforeMin = 0;
+
+export const listInventoryMovementsResponseBalanceAfterMin = 0;
+
+
 
 export const ListInventoryMovementsResponseItem = zod.object({
   "id": zod.number().int(),
   "productId": zod.number().int().nullable(),
   "productName": zod.string(),
-  "type": zod.enum(['in', 'out', 'adjustment']),
-  "quantity": zod.number().int(),
-  "previousQuantity": zod.number().int(),
-  "newQuantity": zod.number().int(),
+  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']),
+  "quantity": zod.number().int().min(1),
   "reason": zod.string(),
+  "balanceBefore": zod.number().int().min(listInventoryMovementsResponseBalanceBeforeMin),
+  "balanceAfter": zod.number().int().min(listInventoryMovementsResponseBalanceAfterMin),
   "saleId": zod.number().int().nullable(),
+  "supplierId": zod.number().int().nullable(),
+  "supplierName": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 export const ListInventoryMovementsResponse = zod.array(ListInventoryMovementsResponseItem)
 
 
 /**
- * @summary Add stock, remove stock, or reconcile physical stock
+ * @summary Record inventory supply
  */
 
-export const createInventoryMovementBodyQuantityMin = 0;
 
-export const createInventoryMovementBodyReasonMax = 240;
+export const createInventorySupplyBodyReasonMax = 500;
+
+export const createInventorySupplyBodyRequestIdMax = 100;
 
 
 
-export const CreateInventoryMovementBody = zod.object({
+export const CreateInventorySupplyBody = zod.object({
   "productId": zod.number().int().min(1),
-  "type": zod.enum(['in', 'out', 'adjustment']),
-  "quantity": zod.number().int().min(createInventoryMovementBodyQuantityMin).describe('For adjustment'),
-  "reason": zod.string().min(1).max(createInventoryMovementBodyReasonMax)
+  "supplierId": zod.number().int().nullish(),
+  "quantity": zod.number().int().min(1),
+  "reason": zod.string().min(1).max(createInventorySupplyBodyReasonMax),
+  "requestId": zod.string().min(1).max(createInventorySupplyBodyRequestIdMax)
 })
 
-export const CreateInventoryMovementResponse = zod.object({
+
+export const createInventorySupplyResponseBalanceBeforeMin = 0;
+
+export const createInventorySupplyResponseBalanceAfterMin = 0;
+
+
+
+export const CreateInventorySupplyResponse = zod.object({
   "id": zod.number().int(),
   "productId": zod.number().int().nullable(),
   "productName": zod.string(),
-  "type": zod.enum(['in', 'out', 'adjustment']),
-  "quantity": zod.number().int(),
-  "previousQuantity": zod.number().int(),
-  "newQuantity": zod.number().int(),
+  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']),
+  "quantity": zod.number().int().min(1),
   "reason": zod.string(),
+  "balanceBefore": zod.number().int().min(createInventorySupplyResponseBalanceBeforeMin),
+  "balanceAfter": zod.number().int().min(createInventorySupplyResponseBalanceAfterMin),
   "saleId": zod.number().int().nullable(),
+  "supplierId": zod.number().int().nullable(),
+  "supplierName": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
 

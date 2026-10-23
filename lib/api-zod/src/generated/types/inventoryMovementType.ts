@@ -10,7 +10,8 @@ export type InventoryMovementType = typeof InventoryMovementType[keyof typeof In
 
 
 export const InventoryMovementType = {
-  in: 'in',
-  out: 'out',
+  opening: 'opening',
+  sale: 'sale',
+  supply: 'supply',
   adjustment: 'adjustment',
 } as const;

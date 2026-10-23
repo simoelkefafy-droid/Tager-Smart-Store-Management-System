@@ -24,7 +24,7 @@ import type {
   GetReportsParams,
   HealthStatus,
   InventoryMovement,
-  InventoryMovementInput,
+  InventorySupplyInput,
   ListInventoryMovementsParams,
   ListSalesParams,
   Product,
@@ -1053,7 +1053,7 @@ export function useListInventoryMovements<TData = Awaited<ReturnType<typeof list
 
 
 
-export const getCreateInventoryMovementUrl = () => {
+export const getCreateInventorySupplyUrl = () => {
 
 
 
@@ -1062,9 +1062,9 @@ export const getCreateInventoryMovementUrl = () => {
 }
 
 /**
- * @summary Add stock, remove stock, or reconcile physical stock
+ * @summary Record inventory supply
  */
-export const createInventoryMovement = async (inventoryMovementInput: InventoryMovementInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement> => {
+export const createInventorySupply = async (inventorySupplyInput: InventorySupplyInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -1080,12 +1080,12 @@ export const createInventoryMovement = async (inventoryMovementInput: InventoryM
     }
     return headers;
   };
-return customFetch<InventoryMovement>(getCreateInventoryMovementUrl(),
+return customFetch<InventoryMovement>(getCreateInventorySupplyUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(inventoryMovementInput)
+    body: JSON.stringify(inventorySupplyInput)
   }
 );}
 
@@ -1093,13 +1093,13 @@ return customFetch<InventoryMovement>(getCreateInventoryMovementUrl(),
 
 
 
-export const getCreateInventoryMovementMutationKey = () => ['createInventoryMovement'] as const;
+export const getCreateInventorySupplyMutationKey = () => ['createInventorySupply'] as const;
 
-export const getCreateInventoryMovementMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext> => {
+export const getCreateInventorySupplyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext> => {
 
-const mutationKey = getCreateInventoryMovementMutationKey();
+const mutationKey = getCreateInventorySupplyMutationKey();
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -1109,10 +1109,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInventoryMovement>>, CreateInventoryMovementMutationVariables> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInventorySupply>>, CreateInventorySupplyMutationVariables> = (props) => {
           const {data} = props ?? {};
 
-          return  createInventoryMovement(data,requestOptions)
+          return  createInventorySupply(data,requestOptions)
         }
 
 
@@ -1122,23 +1122,23 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type CreateInventoryMovementMutationResult = NonNullable<Awaited<ReturnType<typeof createInventoryMovement>>>
-    export type CreateInventoryMovementMutationBody = BodyType<InventoryMovementInput>
-    export type CreateInventoryMovementMutationError = ErrorType<void>
-    export type CreateInventoryMovementMutationVariables = {data: BodyType<InventoryMovementInput>}
+    export type CreateInventorySupplyMutationResult = NonNullable<Awaited<ReturnType<typeof createInventorySupply>>>
+    export type CreateInventorySupplyMutationBody = BodyType<InventorySupplyInput>
+    export type CreateInventorySupplyMutationError = ErrorType<void>
+    export type CreateInventorySupplyMutationVariables = {data: BodyType<InventorySupplyInput>}
 
     /**
- * @summary Add stock, remove stock, or reconcile physical stock
+ * @summary Record inventory supply
  */
-export const useCreateInventoryMovement = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventoryMovement>>, TError,CreateInventoryMovementMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useCreateInventorySupply = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof createInventoryMovement>>,
+        Awaited<ReturnType<typeof createInventorySupply>>,
         TError,
-        CreateInventoryMovementMutationVariables,
+        CreateInventorySupplyMutationVariables,
         TContext
       > => {
-      return useMutation(getCreateInventoryMovementMutationOptions(options));
+      return useMutation(getCreateInventorySupplyMutationOptions(options));
     }
 
 export const getGetDashboardUrl = () => {

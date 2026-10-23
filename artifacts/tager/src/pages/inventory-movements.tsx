@@ -4,17 +4,20 @@ import {
   getGetDashboardQueryKey,
   getListInventoryMovementsQueryKey,
   getListProductsQueryKey,
+  exportInventoryMovements,
   useCreateInventorySupply,
   useListInventoryMovements,
   useListProducts,
   useListSuppliers,
   type InventoryMovement,
+  type ExportInventoryMovementsParams,
   type ListInventoryMovementsParams,
   type ListInventoryMovementsType,
 } from '@workspace/api-client-react';
-import { Activity, AlertTriangle, ArrowDownLeft, ArrowUpLeft, CalendarDays, Check, Clock3, Package, RotateCw, Search, Truck } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowDownLeft, ArrowUpLeft, CalendarDays, Check, Clock3, Download, Package, RotateCw, Search, Truck } from 'lucide-react';
 
 type InventoryMovementsPageProps = { demo: boolean };
+const PAGE_SIZE = 25;
 
 const movementLabels: Record<InventoryMovement['type'], string> = {
   opening: 'رصيد افتتاحي',
@@ -95,6 +98,9 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
   const [type, setType] = useState<ListInventoryMovementsType | ''>('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [page, setPage] = useState(1);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
   const [productId, setProductId] = useState('');
   const [supplierId, setSupplierId] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -102,17 +108,24 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const requestId = useRef<string | null>(null);
-  const params = useMemo<ListInventoryMovementsParams>(() => ({
+  const exportParams = useMemo<ExportInventoryMovementsParams>(() => ({
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(type ? { type } : {}),
     ...(from ? { from } : {}),
     ...(to ? { to } : {}),
   }), [search, type, from, to]);
+  const params = useMemo<ListInventoryMovementsParams>(() => ({
+    ...exportParams,
+    page,
+    pageSize: PAGE_SIZE,
+  }), [exportParams, page]);
   const movementsQ = useListInventoryMovements(params, { request: { headers } });
   const productsQ = useListProducts({ request: { headers } });
   const suppliersQ = useListSuppliers({ request: { headers } });
   const createSupply = useCreateInventorySupply({ request: { headers } });
-  const movements = movementsQ.data || [];
+  const movements = movementsQ.data?.items || [];
+  const totalMovements = movementsQ.data?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(totalMovements / PAGE_SIZE));
   const products = productsQ.data || [];
   const suppliers = suppliersQ.data || [];
   const filtersActive = Boolean(search || type || from || to);
@@ -171,6 +184,28 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
     setType('');
     setFrom('');
     setTo('');
+    setPage(1);
+  };
+
+  const downloadExport = async () => {
+    setExportError('');
+    setIsExporting(true);
+    try {
+      const csv = await exportInventoryMovements(exportParams, { headers });
+      const file = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `inventory-movements_${from || 'start'}_${to || 'end'}.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setExportError('تعذر تصدير الحركات. تحقق من الاتصال ثم حاول مرة أخرى.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return <div className="fade-up" dir="rtl">
@@ -181,7 +216,7 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
         <p className="mb-0 mt-1 text-sm text-[#778391]">كل تغيير في رصيد منتجاتك، مرتباً كما حدث.</p>
       </div>
       <div className="flex items-center gap-2 rounded-xl border border-[#dce8df] bg-[#edf5ef] px-3 py-2 text-xs font-semibold text-[#286247]" data-testid="text-movements-count">
-        <Activity size={15} />{movementsQ.isLoading ? 'جارٍ التحديث' : `${movements.length.toLocaleString('ar-EG')} حركة`}
+        <Activity size={15} />{movementsQ.isLoading ? 'جارٍ التحديث' : `${totalMovements.toLocaleString('ar-EG')} حركة`}
       </div>
     </div>
 
@@ -195,14 +230,22 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
           <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
             <label className="relative sm:col-span-2 xl:col-span-1">
               <span className="sr-only">البحث باسم المنتج</span><Search className="absolute right-3 top-3 text-[#8b969e]" size={16} />
-              <input value={search} onChange={event => setSearch(event.target.value)} placeholder="ابحث باسم المنتج..." data-testid="input-movement-search" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] pr-9 pl-3 text-sm outline-none focus:border-[#428260]" />
+              <input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} placeholder="ابحث باسم المنتج..." data-testid="input-movement-search" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] pr-9 pl-3 text-sm outline-none focus:border-[#428260]" />
             </label>
-            <label><span className="sr-only">تصفية حسب النوع</span><select value={type} onChange={event => setType(event.target.value as ListInventoryMovementsType | '')} data-testid="filter-movement-type" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 text-sm text-[#344357] outline-none focus:border-[#428260]">
+            <label><span className="sr-only">تصفية حسب النوع</span><select value={type} onChange={event => { setType(event.target.value as ListInventoryMovementsType | ''); setPage(1); }} data-testid="filter-movement-type" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 text-sm text-[#344357] outline-none focus:border-[#428260]">
               <option value="">كل أنواع الحركة</option><option value="opening">رصيد افتتاحي</option><option value="sale">بيع</option><option value="supply">توريد</option><option value="adjustment">تسوية</option>
             </select></label>
-            <label className="relative"><span className="sr-only">من تاريخ</span><span className="absolute right-3 top-3 text-[10px] text-[#8b969e]">من</span><input type="date" value={from} max={to || undefined} onChange={event => setFrom(event.target.value)} aria-label="من تاريخ" data-testid="filter-movement-from" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 pr-10 text-xs text-[#344357] outline-none focus:border-[#428260]" /></label>
-            <label className="relative"><span className="sr-only">إلى تاريخ</span><span className="absolute right-3 top-3 text-[10px] text-[#8b969e]">إلى</span><input type="date" value={to} min={from || undefined} onChange={event => setTo(event.target.value)} aria-label="إلى تاريخ" data-testid="filter-movement-to" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 pr-10 text-xs text-[#344357] outline-none focus:border-[#428260]" /></label>
+            <label className="relative"><span className="sr-only">من تاريخ</span><span className="absolute right-3 top-3 text-[10px] text-[#8b969e]">من</span><input type="date" value={from} max={to || undefined} onChange={event => { setFrom(event.target.value); setPage(1); }} aria-label="من تاريخ" data-testid="filter-movement-from" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 pr-10 text-xs text-[#344357] outline-none focus:border-[#428260]" /></label>
+            <label className="relative"><span className="sr-only">إلى تاريخ</span><span className="absolute right-3 top-3 text-[10px] text-[#8b969e]">إلى</span><input type="date" value={to} min={from || undefined} onChange={event => { setTo(event.target.value); setPage(1); }} aria-label="إلى تاريخ" data-testid="filter-movement-to" className="h-10 w-full rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 pr-10 text-xs text-[#344357] outline-none focus:border-[#428260]" /></label>
           </div>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs text-[#84909a]">التصدير يشمل كل النتائج المطابقة ضمن الفترة، وليس الصفحة الحالية.</span>
+            <button type="button" onClick={downloadExport} disabled={isExporting || (!from && !to)} data-testid="button-export-movements" className="inline-flex h-9 items-center gap-2 rounded-xl border border-[#dce8df] bg-white px-3 text-xs font-bold text-[#286247] hover:bg-[#f5f9f5] disabled:cursor-not-allowed disabled:opacity-50">
+              <Download size={14} />{isExporting ? 'جارٍ تجهيز الملف...' : 'تصدير الفترة إلى CSV'}
+            </button>
+          </div>
+          {!from && !to && <p className="mb-0 mt-2 text-[11px] text-[#89939b]">اختر تاريخ البداية أو النهاية لتفعيل التصدير.</p>}
+          {exportError && <p className="mb-0 mt-2 text-xs text-[#a94842]" role="alert" data-testid="status-export-movements-error">{exportError}</p>}
           {filtersActive && <div className="mt-3 flex items-center justify-between gap-3 text-xs text-[#778391]">
             <span data-testid="text-filter-summary">نتائج البحث تتحدث تلقائياً</span><button type="button" onClick={clearFilters} data-testid="button-clear-movement-filters" className="font-bold text-[#286247] hover:underline">مسح عوامل التصفية</button>
           </div>}
@@ -222,6 +265,13 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
             <p className="mb-0 mt-2 max-w-sm text-sm leading-6 text-[#778391]">{filtersActive ? 'جرّب كلمة بحث مختلفة أو غيّر النوع والفترة المحددة.' : 'ستظهر هنا أرصدة البداية والمبيعات والتوريدات والتسويات المسجلة.'}</p>
             {filtersActive && <button type="button" onClick={clearFilters} data-testid="button-empty-clear-filters" className="mt-4 text-sm font-bold text-[#286247] hover:underline">عرض كل الحركات</button>}
           </div>}
+        {!movementsQ.isLoading && !movementsQ.isError && totalMovements > 0 && <nav className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0eb] px-5 py-3" aria-label="صفحات سجل الحركات" data-testid="pagination-inventory-movements">
+          <span className="text-xs text-[#778391]">الصفحة {page.toLocaleString('ar-EG')} من {pageCount.toLocaleString('ar-EG')} · {totalMovements.toLocaleString('ar-EG')} حركة</span>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPage(current => Math.max(1, current - 1))} disabled={page <= 1} data-testid="button-newer-movements" className="h-9 rounded-lg border border-[#dfe4df] bg-white px-3 text-xs font-bold text-[#344357] hover:bg-[#f8f9f6] disabled:cursor-not-allowed disabled:opacity-45">الأحدث</button>
+            <button type="button" onClick={() => setPage(current => Math.min(pageCount, current + 1))} disabled={page >= pageCount} data-testid="button-older-movements" className="h-9 rounded-lg border border-[#dfe4df] bg-white px-3 text-xs font-bold text-[#344357] hover:bg-[#f8f9f6] disabled:cursor-not-allowed disabled:opacity-45">الأقدم</button>
+          </div>
+        </nav>}
       </section>
 
       <aside className="panel overflow-hidden xl:sticky xl:top-[92px]" aria-labelledby="supply-form-title">

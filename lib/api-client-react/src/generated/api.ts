@@ -21,9 +21,11 @@ import type {
 
 import type {
   Dashboard,
+  ExportInventoryMovementsParams,
   GetReportsParams,
   HealthStatus,
   InventoryMovement,
+  InventoryMovementsPage,
   InventorySupplyInput,
   ListInventoryMovementsParams,
   ListSalesParams,
@@ -987,9 +989,9 @@ export const getListInventoryMovementsUrl = (params?: ListInventoryMovementsPara
 /**
  * @summary List inventory movements
  */
-export const listInventoryMovements = async (params?: ListInventoryMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement[]> => {
+export const listInventoryMovements = async (params?: ListInventoryMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovementsPage> => {
 
-  return customFetch<InventoryMovement[]>(getListInventoryMovementsUrl(params),
+  return customFetch<InventoryMovementsPage>(getListInventoryMovementsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -1009,7 +1011,7 @@ export const getListInventoryMovementsQueryKey = (params?: ListInventoryMovement
     }
 
 
-export const getListInventoryMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListInventoryMovementsQueryOptions = <TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<void>>(params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -1028,14 +1030,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ListInventoryMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof listInventoryMovements>>>
-export type ListInventoryMovementsQueryError = ErrorType<unknown>
+export type ListInventoryMovementsQueryError = ErrorType<void>
 
 
 /**
  * @summary List inventory movements
  */
 
-export function useListInventoryMovements<TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<unknown>>(
+export function useListInventoryMovements<TData = Awaited<ReturnType<typeof listInventoryMovements>>, TError = ErrorType<void>>(
  params?: ListInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -1053,12 +1055,96 @@ export function useListInventoryMovements<TData = Awaited<ReturnType<typeof list
 
 
 
+export const getExportInventoryMovementsUrl = (params?: ExportInventoryMovementsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/inventory-movements/export?${stringifiedParams}` : `/api/inventory-movements/export`
+}
+
+/**
+ * @summary Export filtered inventory movements as CSV
+ */
+export const exportInventoryMovements = async (params?: ExportInventoryMovementsParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getExportInventoryMovementsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportInventoryMovementsQueryKey = (params?: ExportInventoryMovementsParams,) => {
+    return [
+    `/api/inventory-movements/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getExportInventoryMovementsQueryOptions = <TData = Awaited<ReturnType<typeof exportInventoryMovements>>, TError = ErrorType<void>>(params?: ExportInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportInventoryMovementsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportInventoryMovements>>> = ({ signal }) => exportInventoryMovements(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportInventoryMovements>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportInventoryMovementsQueryResult = NonNullable<Awaited<ReturnType<typeof exportInventoryMovements>>>
+export type ExportInventoryMovementsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Export filtered inventory movements as CSV
+ */
+
+export function useExportInventoryMovements<TData = Awaited<ReturnType<typeof exportInventoryMovements>>, TError = ErrorType<void>>(
+ params?: ExportInventoryMovementsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportInventoryMovements>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportInventoryMovementsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getCreateInventorySupplyUrl = () => {
 
 
 
 
-  return `/api/inventory-movements`
+  return `/api/inventory-movements/export`
 }
 
 /**

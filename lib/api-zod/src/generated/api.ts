@@ -255,35 +255,64 @@ export const CreateSaleResponse = zod.object({
 /**
  * @summary List inventory movements
  */
+
+export const listInventoryMovementsQueryPageSizeMax = 100;
+
+
+
 export const ListInventoryMovementsQueryParams = zod.object({
   "search": zod.coerce.string().optional(),
   "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']).optional(),
   "from": zod.date().optional(),
-  "to": zod.date().optional()
+  "to": zod.date().optional(),
+  "page": zod.coerce.number().int().min(1).optional(),
+  "pageSize": zod.coerce.number().int().min(1).max(listInventoryMovementsQueryPageSizeMax).optional()
 })
 
 
-export const listInventoryMovementsResponseBalanceBeforeMin = 0;
+export const listInventoryMovementsResponseItemsItemBalanceBeforeMin = 0;
 
-export const listInventoryMovementsResponseBalanceAfterMin = 0;
+export const listInventoryMovementsResponseItemsItemBalanceAfterMin = 0;
+
+export const listInventoryMovementsResponseTotalMin = 0;
+
+
+export const listInventoryMovementsResponsePageSizeMax = 100;
 
 
 
-export const ListInventoryMovementsResponseItem = zod.object({
+export const ListInventoryMovementsResponse = zod.object({
+  "items": zod.array(zod.object({
   "id": zod.number().int(),
   "productId": zod.number().int().nullable(),
   "productName": zod.string(),
   "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']),
   "quantity": zod.number().int().min(1),
   "reason": zod.string(),
-  "balanceBefore": zod.number().int().min(listInventoryMovementsResponseBalanceBeforeMin),
-  "balanceAfter": zod.number().int().min(listInventoryMovementsResponseBalanceAfterMin),
+  "balanceBefore": zod.number().int().min(listInventoryMovementsResponseItemsItemBalanceBeforeMin),
+  "balanceAfter": zod.number().int().min(listInventoryMovementsResponseItemsItemBalanceAfterMin),
   "saleId": zod.number().int().nullable(),
   "supplierId": zod.number().int().nullable(),
   "supplierName": zod.string().nullable(),
   "createdAt": zod.coerce.date()
+})),
+  "total": zod.number().int().min(listInventoryMovementsResponseTotalMin),
+  "page": zod.number().int().min(1),
+  "pageSize": zod.number().int().min(1).max(listInventoryMovementsResponsePageSizeMax)
 })
-export const ListInventoryMovementsResponse = zod.array(ListInventoryMovementsResponseItem)
+
+
+/**
+ * @summary Export filtered inventory movements as CSV
+ */
+export const ExportInventoryMovementsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']).optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional()
+})
+
+export const ExportInventoryMovementsResponse = zod.unknown()
 
 
 /**

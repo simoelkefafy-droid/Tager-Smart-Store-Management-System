@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { getAuth } from "@clerk/express";
 import {
   and,
+  count,
   desc,
   eq,
   gte,
@@ -493,7 +494,14 @@ router.get("/sales", async (req, res): Promise<void> => {
   res.json(ListSalesResponse.parse(sales));
 });
 
-router.get("/inventory-movements", async (req, res): Promise<void> => {
+function parseMovementRequest(query: {
+  search?: unknown;
+  type?: unknown;
+  from?: unknown;
+  to?: unknown;
+  page?: unknown;
+  pageSize?: unknown;
+}, owner: string) {
   const readDate = (value: unknown): Date | undefined => {
     if (value === undefined) return undefined;
     if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -505,31 +513,25 @@ router.get("/inventory-movements", async (req, res): Promise<void> => {
     }
     return date;
   };
-  const parsedFrom = readDate(req.query.from);
-  const parsedTo = readDate(req.query.to);
-  if (
-    (req.query.from !== undefined && !parsedFrom) ||
-    (req.query.to !== undefined && !parsedTo)
-  ) {
-    res.status(400).json({ error: "صيغة التاريخ غير صحيحة" });
-    return;
+  const from = readDate(query.from);
+  const to = readDate(query.to);
+  if ((query.from !== undefined && !from) || (query.to !== undefined && !to)) {
+    return { error: "صيغة التاريخ غير صحيحة" } as const;
   }
   const parsed = ListInventoryMovementsQueryParams.safeParse({
-    search: req.query.search,
-    type: req.query.type,
-    from: parsedFrom,
-    to: parsedTo,
+    search: query.search,
+    type: query.type,
+    from,
+    to,
+    page: query.page,
+    pageSize: query.pageSize,
   });
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const { from, to, search, type } = parsed.data;
+  if (!parsed.success) return { error: parsed.error.message } as const;
   if (from && to && from > to) {
-    res.status(400).json({ error: "تاريخ البداية يجب أن يسبق تاريخ النهاية" });
-    return;
+    return { error: "تاريخ البداية يجب أن يسبق تاريخ النهاية" } as const;
   }
-  const filters = [eq(inventoryMovementsTable.ownerId, ownerId(res))];
+  const filters = [eq(inventoryMovementsTable.ownerId, owner)];
+  const { search, type } = parsed.data;
   if (type) filters.push(eq(inventoryMovementsTable.type, type));
   if (search?.trim()) {
     filters.push(ilike(inventoryMovementsTable.productName, `%${search.trim()}%`));
@@ -539,6 +541,25 @@ router.get("/inventory-movements", async (req, res): Promise<void> => {
     const toExclusive = new Date(to);
     toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
     filters.push(lt(inventoryMovementsTable.createdAt, toExclusive));
+  }
+  return { data: parsed.data, filters } as const;
+}
+
+function movementCsvCell(value: string | number | null): string {
+  const raw = String(value ?? "");
+  const safe = typeof value === "string" && /^[\t\r ]*[=+\-@]/.test(raw) ? `'${raw}` : raw;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
+router.get("/inventory-movements/export", async (req, res): Promise<void> => {
+  const parsed = parseMovementRequest(req.query, ownerId(res));
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  if (!parsed.data.from && !parsed.data.to) {
+    res.status(400).json({ error: "حدد تاريخ البداية أو النهاية قبل التصدير" });
+    return;
   }
   const movements = await db
     .select({
@@ -557,9 +578,72 @@ router.get("/inventory-movements", async (req, res): Promise<void> => {
     })
     .from(inventoryMovementsTable)
     .leftJoin(suppliersTable, eq(inventoryMovementsTable.supplierId, suppliersTable.id))
-    .where(and(...filters))
+    .where(and(...parsed.filters))
     .orderBy(desc(inventoryMovementsTable.createdAt), desc(inventoryMovementsTable.id));
-  res.json(ListInventoryMovementsResponse.parse(movements));
+  const headers = ["رقم الحركة", "المنتج", "النوع", "الكمية", "التفاصيل", "الرصيد قبل", "الرصيد بعد", "رقم البيع", "المورد", "التاريخ"];
+  const rows = movements.map((movement) => [
+    movement.id,
+    movement.productName,
+    movement.type,
+    movement.quantity,
+    movement.reason,
+    movement.balanceBefore,
+    movement.balanceAfter,
+    movement.saleId,
+    movement.supplierName,
+    movement.createdAt.toISOString(),
+  ]);
+  const csv = [headers, ...rows].map((row) => row.map(movementCsvCell).join(",")).join("\r\n");
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="inventory-movements.csv"');
+  res.send(`\uFEFF${csv}`);
+});
+
+router.get("/inventory-movements", async (req, res): Promise<void> => {
+  const parsed = parseMovementRequest(req.query, ownerId(res));
+  if ("error" in parsed) {
+    res.status(400).json({ error: parsed.error });
+    return;
+  }
+  const page = parsed.data.page ?? 1;
+  const pageSize = parsed.data.pageSize ?? 25;
+  const offset = (page - 1) * pageSize;
+  const [movements, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: inventoryMovementsTable.id,
+        productId: inventoryMovementsTable.productId,
+        productName: inventoryMovementsTable.productName,
+        type: inventoryMovementsTable.type,
+        quantity: inventoryMovementsTable.quantity,
+        reason: inventoryMovementsTable.reason,
+        balanceBefore: inventoryMovementsTable.balanceBefore,
+        balanceAfter: inventoryMovementsTable.balanceAfter,
+        saleId: inventoryMovementsTable.saleId,
+        supplierId: inventoryMovementsTable.supplierId,
+        supplierName: suppliersTable.name,
+        createdAt: inventoryMovementsTable.createdAt,
+      })
+      .from(inventoryMovementsTable)
+      .leftJoin(suppliersTable, eq(inventoryMovementsTable.supplierId, suppliersTable.id))
+      .where(and(...parsed.filters))
+      .orderBy(desc(inventoryMovementsTable.createdAt), desc(inventoryMovementsTable.id))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ total: count() })
+      .from(inventoryMovementsTable)
+      .leftJoin(suppliersTable, eq(inventoryMovementsTable.supplierId, suppliersTable.id))
+      .where(and(...parsed.filters)),
+  ]);
+  res.json(
+    ListInventoryMovementsResponse.parse({
+      items: movements,
+      total,
+      page,
+      pageSize,
+    }),
+  );
 });
 
 router.post("/inventory-movements", async (req, res): Promise<void> => {

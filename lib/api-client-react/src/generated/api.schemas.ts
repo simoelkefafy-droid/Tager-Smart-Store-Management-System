@@ -115,6 +115,19 @@ export interface InventoryMovement {
   createdAt: string;
 }
 
+export interface InventoryMovementsPage {
+  items: InventoryMovement[];
+  /** @minimum 0 */
+  total: number;
+  /** @minimum 1 */
+  page: number;
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  pageSize: number;
+}
+
 export interface InventorySupplyInput {
   /** @minimum 1 */
   productId: number;
@@ -177,12 +190,38 @@ search?: string;
 type?: ListInventoryMovementsType;
 from?: string;
 to?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
 };
 
 export type ListInventoryMovementsType = typeof ListInventoryMovementsType[keyof typeof ListInventoryMovementsType];
 
 
 export const ListInventoryMovementsType = {
+  opening: 'opening',
+  sale: 'sale',
+  supply: 'supply',
+  adjustment: 'adjustment',
+} as const;
+
+export type ExportInventoryMovementsParams = {
+search?: string;
+type?: ExportInventoryMovementsType;
+from?: string;
+to?: string;
+};
+
+export type ExportInventoryMovementsType = typeof ExportInventoryMovementsType[keyof typeof ExportInventoryMovementsType];
+
+
+export const ExportInventoryMovementsType = {
   opening: 'opening',
   sale: 'sale',
   supply: 'supply',

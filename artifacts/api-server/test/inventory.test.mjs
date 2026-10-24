@@ -6,6 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { after, before, test } from "node:test";
 import { randomUUID } from "node:crypto";
+import { build } from "esbuild";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 
 const artifactDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -16,7 +19,8 @@ const requireFromDb = createRequire(
 );
 const { Pool } = requireFromDb("pg");
 
-const ownerId = "demo";
+const ownerId = "regression-owner";
+let testBuildDir;
 const requestTag = `inventory-regression-${randomUUID()}`;
 const productIds = [];
 let adminDatabase;
@@ -131,12 +135,12 @@ async function waitUntilReady(child) {
   throw new Error("API server did not become ready within 15 seconds");
 }
 
-async function api(pathname, { method = "GET", body } = {}) {
+async function api(pathname, { method = "GET", body, owner = ownerId } = {}) {
   const response = await fetch(`${baseUrl}/api${pathname}`, {
     method,
     headers: {
       "content-type": "application/json",
-      "x-tager-demo": "true",
+      ...(owner ? { "x-test-owner": owner } : { "x-tager-demo": "true" }),
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
@@ -203,6 +207,49 @@ async function productQuantity(productId) {
   return rows[0].quantity;
 }
 
+test("purchases are tenant isolated, atomic, retry safe and use weighted cost", async () => {
+  assert.equal((await api("/products", { owner: null })).status, 401);
+  const product = await createProduct(`${requestTag}-purchased`, 10);
+  const supplier = await api("/suppliers", { method: "POST", body: { name: requestTag, phone: "", products: "" } });
+  assert.equal(supplier.status, 201);
+  const other = await api("/products", { owner: "other-store" });
+  assert.equal(other.status, 200);
+  assert.equal(other.data.some(p => p.id === product.id), false);
+  assert.equal((await api(`/products/${product.id}`, { method: "DELETE", owner: "other-store" })).status, 404);
+  const payload = {
+    supplierId: supplier.data.id, requestId: randomUUID(), reference: "test receipt",
+    items: [{ productId: product.id, quantity: 10, unitCost: 5 }],
+  };
+  assert.equal((await api("/purchases", { method: "POST", owner: "other-store", body: payload })).status, 400);
+  const [first, retry] = await Promise.all([
+    api("/purchases", { method: "POST", body: payload }),
+    api("/purchases", { method: "POST", body: payload }),
+  ]);
+  assert.equal(first.status, 201, JSON.stringify(first.data));
+  assert.equal(retry.status, 201, JSON.stringify(retry.data));
+  assert.equal(first.data.id, retry.data.id);
+  assert.equal(first.data.total, 50);
+  assert.equal(await productQuantity(product.id), 20);
+  const { rows } = await database.query("SELECT purchase_price FROM tager_products WHERE id=$1", [product.id]);
+  assert.equal(Number(rows[0].purchase_price), 4);
+  const changed = await api("/purchases", { method: "POST", body: { ...payload, reference: "changed" } });
+  assert.equal(changed.status, 409);
+  const failure = await api("/purchases", { method: "POST", body: {
+    ...payload, requestId: randomUUID(), items: [...payload.items, { productId: 2147483647, quantity: 1, unitCost: 10 }],
+  }});
+  assert.equal(failure.status, 400);
+  assert.equal(await productQuantity(product.id), 20);
+  const sale = await api("/sales", { method: "POST", body: { items: [{ productId: product.id, quantity: 2 }] } });
+  assert.equal(sale.status, 201);
+  assert.equal(sale.data.total, 14);
+  assert.equal(sale.data.profit, 6);
+  assert.equal(await productQuantity(product.id), 18);
+  assert.equal((await api("/purchases", { owner: "other-store" })).data.length, 0);
+  assert.equal((await api("/sales", { owner: "other-store" })).data.length, 0);
+  assert.equal((await api("/inventory-movements", { owner: "other-store" })).data.total, 0);
+  assert.equal((await api("/purchases")).data.filter(p => p.id === first.data.id).length, 1);
+});
+
 before(async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error(
@@ -217,12 +264,50 @@ before(async () => {
   testDatabaseUrl = isolatedUrl.toString();
   database = new Pool({ connectionString: testDatabaseUrl });
   await database.query(testSchemaDdl);
+  await database.query(`
+    CREATE TABLE tager_purchases (
+      id serial PRIMARY KEY, owner_id text NOT NULL,
+      supplier_id integer REFERENCES tager_suppliers(id) ON DELETE SET NULL,
+      supplier_name text NOT NULL, reference text NOT NULL DEFAULT '',
+      request_id text NOT NULL, total numeric(12,2) NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now(), UNIQUE(owner_id,request_id)
+    );
+    CREATE TABLE tager_purchase_items (
+      id serial PRIMARY KEY, purchase_id integer NOT NULL REFERENCES tager_purchases(id),
+      product_id integer NOT NULL REFERENCES tager_products(id),
+      product_name text NOT NULL, quantity integer NOT NULL,
+      unit_cost numeric(12,2) NOT NULL, line_total numeric(12,2) NOT NULL
+    );
+  `);
+  // Authentication is stubbed only in this disposable test bundle, never in the application.
+  testBuildDir = await mkdtemp(path.join(tmpdir(), "tager-api-test-"));
+  await build({
+    stdin: {
+      contents: `import express from "express"; import router from "./src/routes/tager";
+        const app=express(); app.use(express.json());
+        app.get("/api/healthz",(_req,res)=>res.json({status:"ok"}));
+        app.use("/api",router); app.listen(Number(process.env.PORT),"127.0.0.1");`,
+      resolveDir: artifactDir, loader: "ts",
+    },
+    bundle: true, platform: "node", format: "esm", external: ["pg-native"],
+    outfile: path.join(testBuildDir, "server.mjs"),
+    banner: { js: `import {createRequire} from "node:module"; const require=createRequire(import.meta.url);` },
+    plugins: [{
+      name: "test-only-auth",
+      setup(builder) {
+        builder.onResolve({ filter: /^@clerk\/express$/ }, () => ({ path: "auth", namespace: "test-only" }));
+        builder.onLoad({ filter: /.*/, namespace: "test-only" }, () => ({
+          contents: `export const getAuth=req=>({userId:req.headers["x-test-owner"]||null});`,
+        }));
+      },
+    }],
+  });
 
   const port = await unusedPort();
   baseUrl = `http://127.0.0.1:${port}`;
   server = spawn(
     process.execPath,
-    ["--enable-source-maps", "./dist/index.mjs"],
+    ["--enable-source-maps", path.join(testBuildDir, "server.mjs")],
     {
       cwd: artifactDir,
       env: {
@@ -243,6 +328,7 @@ after(async () => {
     await new Promise((resolve) => server.once("exit", resolve));
   }
   try {
+    if (testBuildDir) await rm(testBuildDir, { recursive: true, force: true });
     if (database) await database.end();
     if (testSchema && adminDatabase) {
       await adminDatabase.query(

@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import purchasesRouter from "./purchases";
 import { getAuth } from "@clerk/express";
 import {
   and,
@@ -15,6 +16,8 @@ import {
   db,
   inventoryMovementsTable,
   productsTable,
+  purchaseItemsTable,
+  purchasesTable,
   saleItemsTable,
   salesTable,
   suppliersTable,
@@ -94,88 +97,21 @@ async function backfillInventoryHistory(owner: string): Promise<void> {
     );
     if (!untrackedProducts.length) return;
 
-    const sales = await tx
-      .select()
-      .from(salesTable)
-      .where(eq(salesTable.ownerId, owner))
-      .orderBy(salesTable.createdAt, salesTable.id);
-    const saleLines = sales.length
-      ? await tx
-          .select()
-          .from(saleItemsTable)
-          .where(inArray(saleItemsTable.saleId, sales.map((sale) => sale.id)))
-      : [];
-    const untrackedIds = new Set(untrackedProducts.map((product) => product.id));
-    const linesBySale = new Map<
-      number,
-      Map<number, { productName: string; quantity: number }>
-    >();
-    const soldByProduct = new Map<number, number>();
-    for (const line of saleLines) {
-      if (!untrackedIds.has(line.productId)) continue;
-      const current = linesBySale.get(line.saleId) ?? new Map();
-      const existingLine = current.get(line.productId);
-      current.set(line.productId, {
-        productName: line.productName,
-        quantity: (existingLine?.quantity ?? 0) + line.quantity,
-      });
-      linesBySale.set(line.saleId, current);
-      soldByProduct.set(
-        line.productId,
-        (soldByProduct.get(line.productId) ?? 0) + line.quantity,
-      );
-    }
-
-    const balanceByProduct = new Map<number, number>();
     const rows: Array<typeof inventoryMovementsTable.$inferInsert> = [];
     for (const product of untrackedProducts) {
-      const openingQuantity =
-        product.quantity + (soldByProduct.get(product.id) ?? 0);
-      balanceByProduct.set(product.id, openingQuantity);
+      const openingQuantity = product.quantity;
       if (openingQuantity === 0) continue;
-      const firstSale = sales
-        .filter((sale) => linesBySale.get(sale.id)?.has(product.id))
-        .at(0);
-      const openingAt = firstSale
-        ? new Date(
-            Math.min(
-              product.createdAt.getTime(),
-              firstSale.createdAt.getTime() - 1,
-            ),
-          )
-        : product.createdAt;
       rows.push({
         ownerId: owner,
         productId: product.id,
         productName: product.name,
         type: "opening",
         quantity: openingQuantity,
-        reason: "رصيد افتتاحي قبل تفعيل سجل الحركة",
+        reason: "رصيد قائم عند بدء تتبع المخزون؛ لا يمثل عملية شراء",
         balanceBefore: 0,
         balanceAfter: openingQuantity,
-        createdAt: openingAt,
+        createdAt: new Date(),
       });
-    }
-
-    for (const sale of sales) {
-      for (const [productId, line] of linesBySale.get(sale.id) ?? []) {
-        const balanceBefore = balanceByProduct.get(productId);
-        if (balanceBefore === undefined) continue;
-        const balanceAfter = balanceBefore - line.quantity;
-        rows.push({
-          ownerId: owner,
-          productId,
-          productName: line.productName,
-          type: "sale",
-          quantity: line.quantity,
-          reason: `بيع سابق رقم ${sale.id}`,
-          balanceBefore,
-          balanceAfter,
-          saleId: sale.id,
-          createdAt: sale.createdAt,
-        });
-        balanceByProduct.set(productId, balanceAfter);
-      }
     }
     if (rows.length) {
       await tx.insert(inventoryMovementsTable).values(rows).onConflictDoNothing();
@@ -185,147 +121,7 @@ async function backfillInventoryHistory(owner: string): Promise<void> {
   inventoryHistoryReady.add(owner);
 }
 
-async function seedDemoData(): Promise<void> {
-  const existing = await db
-    .select({ id: productsTable.id })
-    .from(productsTable)
-    .where(eq(productsTable.ownerId, "demo"))
-    .limit(1);
-  if (existing.length > 0) return;
-
-  const [supplierA, supplierB] = await db
-    .insert(suppliersTable)
-    .values([
-      {
-        ownerId: "demo",
-        name: "مؤسسة النور للتوريدات",
-        phone: "01012345678",
-        products: "مواد غذائية، مشروبات",
-      },
-      {
-        ownerId: "demo",
-        name: "شركة الأمانة",
-        phone: "01123456789",
-        products: "منظفات، مستلزمات منزلية",
-      },
-    ])
-    .returning();
-  const products = await db
-    .insert(productsTable)
-    .values([
-      {
-        ownerId: "demo",
-        name: "أرز معبأ 1 كجم",
-        category: "مواد غذائية",
-        purchasePrice: 27,
-        sellingPrice: 32,
-        quantity: 42,
-        minStock: 10,
-        supplierId: supplierA.id,
-      },
-      {
-        ownerId: "demo",
-        name: "زيت عباد الشمس 1 لتر",
-        category: "مواد غذائية",
-        purchasePrice: 58,
-        sellingPrice: 66,
-        quantity: 7,
-        minStock: 12,
-        supplierId: supplierA.id,
-      },
-      {
-        ownerId: "demo",
-        name: "منظف أرضيات 1 لتر",
-        category: "منظفات",
-        purchasePrice: 34,
-        sellingPrice: 45,
-        quantity: 18,
-        minStock: 6,
-        supplierId: supplierB.id,
-      },
-      {
-        ownerId: "demo",
-        name: "شاي أسود 250 جم",
-        category: "مشروبات",
-        purchasePrice: 39,
-        sellingPrice: 48,
-        quantity: 5,
-        minStock: 8,
-        supplierId: supplierA.id,
-      },
-      {
-        ownerId: "demo",
-        name: "مناديل ورقية",
-        category: "مستلزمات منزلية",
-        purchasePrice: 19,
-        sellingPrice: 25,
-        quantity: 36,
-        minStock: 10,
-        supplierId: supplierB.id,
-      },
-    ])
-    .returning();
-
-  const saleSeeds = [
-    { daysAgo: 0, entries: [[products[0], 2], [products[1], 1]] as const },
-    { daysAgo: 1, entries: [[products[2], 1], [products[3], 2], [products[0], 1]] as const },
-    { daysAgo: 2, entries: [[products[4], 3], [products[0], 1]] as const },
-  ];
-  for (const seed of saleSeeds) {
-    const lines = seed.entries.map(([product, quantity]) => ({
-      product,
-      quantity,
-      unitPrice: product.sellingPrice,
-      unitCost: product.purchasePrice,
-      lineTotal: product.sellingPrice * quantity,
-    }));
-    const total = lines.reduce((sum, line) => sum + line.lineTotal, 0);
-    const profit = lines.reduce(
-      (sum, line) => sum + (line.unitPrice - line.unitCost) * line.quantity,
-      0,
-    );
-    const [sale] = await db
-      .insert(salesTable)
-      .values({
-        ownerId: "demo",
-        total,
-        profit,
-        createdAt: new Date(Date.now() - seed.daysAgo * 24 * 60 * 60 * 1000),
-      })
-      .returning();
-    await db.insert(saleItemsTable).values(
-      lines.map((line) => ({
-        saleId: sale.id,
-        productId: line.product.id,
-        productName: line.product.name,
-        quantity: line.quantity,
-        unitPrice: line.unitPrice,
-        unitCost: line.unitCost,
-        lineTotal: line.lineTotal,
-      })),
-    );
-  }
-}
-
 router.use(async (req, res, next) => {
-  if (req.get("x-tager-demo") === "true") {
-    try {
-      let seedPromise = demoSeedPromise;
-      if (!seedPromise) {
-        seedPromise = seedDemoData();
-        demoSeedPromise = seedPromise;
-      }
-      await seedPromise;
-      res.locals.ownerId = "demo";
-      await backfillInventoryHistory("demo");
-      next();
-    } catch (error) {
-      req.log.error({ err: error }, "Could not prepare demo data");
-      res.status(500).json({ error: "تعذر تحميل البيانات التجريبية" });
-    }
-    return;
-  }
-
   const userId = getAuth(req).userId;
   if (!userId) {
     res.status(401).json({ error: "يجب تسجيل الدخول أولاً" });
@@ -336,7 +132,7 @@ router.use(async (req, res, next) => {
   next();
 });
 
-let demoSeedPromise: Promise<void> | null = null;
+router.use(purchasesRouter);
 
 function ownerId(res: { locals: Record<string, unknown> }): string {
   return String(res.locals.ownerId);
@@ -536,8 +332,13 @@ router.delete("/products/:id", async (req, res): Promise<void> => {
       ),
     )
     .limit(1);
-  if (used) {
-    res.status(409).json({ error: "لا يمكن حذف منتج مرتبط بمبيعات سابقة" });
+  const [purchased] = await db.select({ id: purchaseItemsTable.id })
+    .from(purchaseItemsTable)
+    .innerJoin(purchasesTable, eq(purchaseItemsTable.purchaseId, purchasesTable.id))
+    .where(and(eq(purchaseItemsTable.productId, params.data.id), eq(purchasesTable.ownerId, owner)))
+    .limit(1);
+  if (used || purchased) {
+    res.status(409).json({ error: "لا يمكن حذف منتج مرتبط بمبيعات أو مشتريات سابقة؛ يمكنك تعديل بياناته." });
     return;
   }
   const [deleted] = await db
@@ -793,6 +594,7 @@ router.post("/inventory-movements", async (req, res): Promise<void> => {
 
   try {
     const movement = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${owner + ":" + requestId}))`);
       const [existing] = await tx
         .select()
         .from(inventoryMovementsTable)
@@ -901,7 +703,7 @@ router.post("/sales", async (req, res): Promise<void> => {
         balanceBefore: number;
         balanceAfter: number;
       }> = [];
-      for (const [productId, quantity] of quantities) {
+      for (const [productId, quantity] of [...quantities].sort((a, b) => a[0] - b[0])) {
         const [product] = await tx
           .select()
           .from(productsTable)
@@ -922,7 +724,7 @@ router.post("/sales", async (req, res): Promise<void> => {
           productName: product.name,
           quantity,
           unitPrice: product.sellingPrice,
-          lineTotal: product.sellingPrice * quantity,
+          lineTotal: Math.round(product.sellingPrice * 100) * quantity / 100,
           unitCost: product.purchasePrice,
           balanceBefore: product.quantity,
           balanceAfter: product.quantity - quantity,

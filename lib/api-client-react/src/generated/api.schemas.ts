@@ -21,6 +21,57 @@ export interface Product {
   supplierId?: number | null;
 }
 
+export type PurchaseInputItemsItem = {
+  /** @minimum 1 */
+  productId: number;
+  /**
+     * @minimum 1
+     * @maximum 1000000
+     */
+  quantity: number;
+  /**
+     * @minimum 0
+     * @maximum 1000000
+     */
+  unitCost: number;
+};
+
+export interface PurchaseInput {
+  /** @minimum 1 */
+  supplierId: number;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  requestId: string;
+  /** @maxLength 200 */
+  reference?: string;
+  /**
+     * @minItems 1
+     * @maxItems 100
+     */
+  items: PurchaseInputItemsItem[];
+}
+
+export type PurchaseItemsItem = {
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitCost: number;
+  lineTotal: number;
+};
+
+export interface Purchase {
+  id: number;
+  /** @nullable */
+  supplierId?: number | null;
+  supplierName: string;
+  reference: string;
+  total: number;
+  createdAt: string;
+  items: PurchaseItemsItem[];
+}
+
 export interface ProductInput {
   /** @minLength 1 */
   name: string;

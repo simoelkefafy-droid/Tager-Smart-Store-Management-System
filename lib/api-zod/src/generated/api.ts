@@ -8,6 +8,68 @@
 import * as zod from 'zod';
 
 
+export const ListPurchasesResponseItem = zod.object({
+  "id": zod.number().int(),
+  "supplierId": zod.number().int().nullish(),
+  "supplierName": zod.string(),
+  "reference": zod.string(),
+  "total": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "productId": zod.number().int(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitCost": zod.number(),
+  "lineTotal": zod.number()
+}))
+})
+export const ListPurchasesResponse = zod.array(ListPurchasesResponseItem)
+
+
+
+export const createPurchaseBodyRequestIdMax = 100;
+
+export const createPurchaseBodyReferenceMax = 200;
+
+
+export const createPurchaseBodyItemsItemQuantityMax = 1000000;
+
+export const createPurchaseBodyItemsItemUnitCostMin = 0;
+export const createPurchaseBodyItemsItemUnitCostMax = 1000000;
+export const createPurchaseBodyItemsItemUnitCostMultipleOf = 0.01;
+
+export const createPurchaseBodyItemsMax = 100;
+
+
+
+export const CreatePurchaseBody = zod.object({
+  "supplierId": zod.number().int().min(1),
+  "requestId": zod.string().min(1).max(createPurchaseBodyRequestIdMax),
+  "reference": zod.string().max(createPurchaseBodyReferenceMax).optional(),
+  "items": zod.array(zod.object({
+  "productId": zod.number().int().min(1),
+  "quantity": zod.number().int().min(1).max(createPurchaseBodyItemsItemQuantityMax),
+  "unitCost": zod.number().min(createPurchaseBodyItemsItemUnitCostMin).max(createPurchaseBodyItemsItemUnitCostMax).multipleOf(createPurchaseBodyItemsItemUnitCostMultipleOf)
+})).min(1).max(createPurchaseBodyItemsMax)
+})
+
+export const CreatePurchaseResponse = zod.object({
+  "id": zod.number().int(),
+  "supplierId": zod.number().int().nullish(),
+  "supplierName": zod.string(),
+  "reference": zod.string(),
+  "total": zod.number(),
+  "createdAt": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "productId": zod.number().int(),
+  "productName": zod.string(),
+  "quantity": zod.number().int(),
+  "unitCost": zod.number(),
+  "lineTotal": zod.number()
+}))
+})
+
+
 /**
  * Returns server health status
  * @summary Health check

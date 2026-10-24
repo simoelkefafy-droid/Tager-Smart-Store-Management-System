@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, createContext, useContext, type FormEvent, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
@@ -20,10 +20,11 @@ import {
   Activity, AlertTriangle, ArrowLeft, ArrowUpLeft, BarChart3,
   Boxes, CalendarDays, Check, ChevronDown, CircleHelp, FileBarChart2, Filter,
   Home, LogOut, Menu, Package, Plus, Search, ShoppingBag, ShoppingCart,
-  Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users,
+  Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users, ReceiptText, Download,
 } from 'lucide-react';
 import { Route, Switch, Router as WouterRouter, Link, Redirect, useLocation } from 'wouter';
 import { InventoryMovementsPage } from '@/pages/inventory-movements';
+import { PurchasesPage } from '@/pages/purchases';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -66,17 +67,6 @@ const clerkAppearance = {
   },
 };
 
-type DemoContextType = { demo: boolean; enterDemo: () => void; leaveDemo: () => void };
-const DemoContext = createContext<DemoContextType>({ demo: false, enterDemo: () => {}, leaveDemo: () => {} });
-const useDemo = () => useContext(DemoContext);
-
-function DemoProvider({ children }: { children: ReactNode }) {
-  const [demo, setDemo] = useState(() => localStorage.getItem('tager-demo') === 'yes');
-  const enterDemo = () => { localStorage.setItem('tager-demo', 'yes'); setDemo(true); };
-  const leaveDemo = () => { localStorage.removeItem('tager-demo'); setDemo(false); };
-  return <DemoContext.Provider value={{ demo, enterDemo, leaveDemo }}>{children}</DemoContext.Provider>;
-}
-
 function CacheUserWatcher() {
   const { addListener } = useClerk();
   const client = useQueryClient();
@@ -90,30 +80,31 @@ function CacheUserWatcher() {
 }
 
 function SignInPage() {
-  return <div className="min-h-[100dvh] bg-[#f7f6f1] px-4 py-10 flex items-center justify-center"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} /></div>;
+  return <div className="min-h-[100dvh] bg-[#f7f6f1] px-4 py-10 flex items-center justify-center"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div>;
 }
 function SignUpPage() {
-  return <div className="min-h-[100dvh] bg-[#f7f6f1] px-4 py-10 flex items-center justify-center"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} /></div>;
+  return <div className="min-h-[100dvh] bg-[#f7f6f1] px-4 py-10 flex items-center justify-center"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div>;
 }
 
 const navItems = [
   { href: '/app', label: 'نظرة عامة', mobileLabel: 'الرئيسية', icon: Home },
   { href: '/products', label: 'المنتجات والمخزون', mobileLabel: 'المنتجات', icon: Package },
   { href: '/sales', label: 'المبيعات', mobileLabel: 'المبيعات', icon: ShoppingCart },
+  { href: '/purchases', label: 'المشتريات', mobileLabel: 'المشتريات', icon: ReceiptText },
   { href: '/suppliers', label: 'الموردون', mobileLabel: 'الموردون', icon: Truck },
   { href: '/inventory-movements', label: 'سجل حركة المخزون', mobileLabel: 'المخزون', icon: Activity },
   { href: '/reports', label: 'التقارير', mobileLabel: 'التقارير', icon: BarChart3 },
 ];
 
 function Shell({ children }: { children: ReactNode }) {
-  const [location, setLocation] = useLocation();
-  const { demo, leaveDemo } = useDemo();
+  const [location] = useLocation();
+  const client = useQueryClient();
   const { signOut } = useClerk();
   const { user } = useUser();
   const [mobileOpen, setMobileOpen] = useState(false);
   const logOut = async () => {
-    if (demo) { leaveDemo(); setLocation('/'); return; }
     await signOut({ redirectUrl: basePath || '/' });
+    client.clear();
   };
   return <div className="app-shell" dir="rtl">
     <aside className="desktop-sidebar fixed right-0 top-0 z-30 flex h-full w-[252px] flex-col bg-[#172d45] px-4 py-6 text-white">
@@ -127,29 +118,28 @@ function Shell({ children }: { children: ReactNode }) {
           <div className="mb-2 flex items-center gap-2 text-sm font-bold"><CircleHelp size={16} className="text-[#a4d4b3]" />دفتر يومك</div>
           <p className="m-0 text-xs leading-6 text-[#c0ccd3]">تابع كل حركة في متجرك من مكان واحد، بدون تعقيد.</p>
         </div>
-        <button onClick={logOut} data-testid="button-logout" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#d2dce1] transition hover:bg-white/10"><LogOut size={17} />{demo ? 'إنهاء وضع التجربة' : 'تسجيل الخروج'}</button>
-        <div className="mt-2 truncate px-3 text-[11px] text-[#93a6b3]">{demo ? 'وضع التجربة' : user?.primaryEmailAddress?.emailAddress || 'حساب تاجر'}</div>
+        <button onClick={logOut} data-testid="button-logout" className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#d2dce1] transition hover:bg-white/10"><LogOut size={17} />تسجيل الخروج</button>
+        <div className="mt-2 truncate px-3 text-[11px] text-[#93a6b3]">{user?.primaryEmailAddress?.emailAddress || 'حساب تاجر'}</div>
       </div>
     </aside>
     {mobileOpen && <button aria-label="إغلاق القائمة" className="fixed inset-0 z-40 bg-[#14273d]/40 md:hidden" onClick={() => setMobileOpen(false)} />}
     <aside className={`fixed right-0 top-0 z-50 flex h-full w-[270px] flex-col bg-[#172d45] px-4 py-6 text-white transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
       <div className="mb-7 flex items-center justify-between"><Link href="/app" className="flex items-center gap-3"><img src={`${basePath}/logo.svg`} className="h-9 w-9 rounded-lg" alt="شعار تاجر" /><b>تاجر</b></Link><button onClick={() => setMobileOpen(false)} data-testid="button-close-menu"><X size={20} /></button></div>
       <nav className="space-y-1">{navItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-${href.slice(1)}`} className={`sidebar-link flex items-center gap-3 rounded-xl px-3 py-3 text-sm ${location === href ? 'active' : 'text-[#d2dce1]'}`}><Icon size={18} />{label}</Link>)}</nav>
-      <button onClick={logOut} data-testid="button-mobile-logout" className="mt-auto flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#d2dce1]"><LogOut size={17} />{demo ? 'إنهاء وضع التجربة' : 'تسجيل الخروج'}</button>
+      <button onClick={logOut} data-testid="button-mobile-logout" className="mt-auto flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-[#d2dce1]"><LogOut size={17} />تسجيل الخروج</button>
     </aside>
     <div className="md:mr-[252px]">
       <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-[#e7e8e4] bg-[#f7f6f1]/95 px-4 backdrop-blur md:px-8">
         <div className="flex items-center gap-3"><button className="rounded-lg p-2 text-[#24364c] md:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-menu"><Menu size={21} /></button><div><div className="text-xs text-[#778391]">مساحة عملك</div><div className="text-sm font-bold text-[#1d2d42]">{navItems.find(n => n.href === location)?.label || 'تاجر'}</div></div></div>
         <div className="flex items-center gap-3">
-          {demo && <span className="rounded-full border border-[#b8d5c2] bg-[#eaf4ed] px-3 py-1.5 text-[11px] font-bold text-[#286247]" data-testid="status-demo">بيانات تجريبية</span>}
-          <div className="hidden text-left sm:block"><div className="text-xs font-bold">{demo ? 'متجر النخبة' : user?.fullName || 'أهلاً بك'}</div><div className="text-[10px] text-[#82909c]">{demo ? 'حساب تجريبي' : 'حساب المتجر'}</div></div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dceae0] text-sm font-bold text-[#286247]">{demo ? 'ن' : user?.firstName?.slice(0, 1) || 'ت'}</div>
+          <div className="hidden text-left sm:block"><div className="text-xs font-bold">{user?.fullName || 'أهلاً بك'}</div><div className="text-[10px] text-[#82909c]">حساب المتجر</div></div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dceae0] text-sm font-bold text-[#286247]">{user?.firstName?.slice(0, 1) || 'ت'}</div>
         </div>
       </header>
       <main className="mobile-content mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">{children}</main>
     </div>
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-[#e1e4df] bg-[#fffefa]/95 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
-      {navItems.map(({ href, mobileLabel, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex flex-col items-center gap-1 py-1 text-[9px] ${location === href ? 'font-bold text-[#286247]' : 'text-[#778391]'}`}><Icon size={18} strokeWidth={location === href ? 2.2 : 1.8} /><span className="whitespace-nowrap">{mobileLabel}</span></Link>)}
+    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-[#e1e4df] bg-[#fffefa]/95 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
+      {navItems.map(({ href, mobileLabel, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex flex-col items-center gap-1 py-1 text-[8.5px] min-w-0 ${location === href ? 'font-bold text-[#286247]' : 'text-[#778391]'}`}><Icon size={18} strokeWidth={location === href ? 2.2 : 1.8} /><span className="max-w-full truncate">{mobileLabel}</span></Link>)}
     </nav>
   </div>;
 }
@@ -183,7 +173,7 @@ function SelectField({ label, children, ...props }: SelectHTMLAttributes<HTMLSel
   return <label className="grid gap-2 text-sm font-semibold text-[#344357]">{label}<select {...props} className="h-11 rounded-xl border border-[#dfe4df] bg-[#fffefa] px-3 outline-none focus:border-[#428260]">{children}</select></label>;
 }
 function getErrorMessage(error: unknown) { return error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ البيانات'; }
-function useApiOptions() { const { demo } = useDemo(); return { request: { headers: demo ? { 'x-tager-demo': 'true' } : undefined } }; }
+function useApiOptions() { return {}; }
 
 function Overview() {
   const api = useApiOptions();
@@ -196,7 +186,7 @@ function Overview() {
     <PageTitle title="نظرة عامة" subtitle="صباح الخير، إليك ملخص حركة متجرك اليوم." action={<Link href="/sales" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#286247] px-4 text-sm font-bold text-white hover:bg-[#204f39]" data-testid="button-new-sale"><Plus size={16} />تسجيل عملية بيع</Link>} />
     <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard icon={Wallet} label="إجمالي المبيعات" value={<EGP amount={data.totalSales} />} note="إجمالي قيمة المبيعات المسجلة" accent="bg-[#e8f2ec] text-[#286247]" />
-      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={data.totalProfit} />} note="بعد خصم تكلفة المنتجات المباعة" accent="bg-[#eaf0f6] text-[#385a7c]" />
+      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={data.totalProfit} />} note="قبل المصروفات التشغيلية والضرائب، بتكلفة المنتج وقت البيع" accent="bg-[#eaf0f6] text-[#385a7c]" />
       <StatCard icon={Package} label="المنتجات" value={Number(data.productsCount || 0).toLocaleString('ar-EG')} note="أصناف مسجلة في المخزون" accent="bg-[#f3eee4] text-[#927442]" />
       <StatCard icon={AlertTriangle} label="مخزون منخفض" value={Number(data.lowStockCount || 0).toLocaleString('ar-EG')} note="منتجات تحتاج إلى متابعة" accent="bg-[#fff0ed] text-[#b44c43]" />
     </div>
@@ -222,9 +212,9 @@ function ProductPage() {
   const products = q.data || []; const suppliers = suppliersQ.data || [];
   const [search, setSearch] = useState(''); const [category, setCategory] = useState('all');
   const [form, setForm] = useState<Product | null | false>(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const categories = [...new Set(products.map(p => p.category))];
-  const filtered = products.filter(p => (category === 'all' || p.category === category) && `${p.name} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
-  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() })]); };
+  const categories = [...new Set(products.map(p => p.category.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
+  const filtered = products.filter(p => (category === 'all' || p.category.trim() === category) && `${p.name} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
+  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() }), client.invalidateQueries({ queryKey: [getGetReportsQueryKey()[0]] })]); };
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault(); setError('');
     const f = new FormData(e.currentTarget);
@@ -247,7 +237,8 @@ function ProductPage() {
     {error && <p className="mt-3 rounded-xl bg-[#fff0ed] px-4 py-3 text-sm text-[#a94842]" data-testid="status-product-error">{error}</p>}
     {form !== false && <Dialog title={form ? 'تعديل المنتج' : 'إضافة منتج جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
       <Field label="اسم المنتج" name="name" required defaultValue={form?.name || ''} data-testid="input-product-name" />
-      <Field label="الفئة" name="category" required defaultValue={form?.category || ''} placeholder="مثال: مشروبات" data-testid="input-product-category" />
+      <Field label="الفئة" name="category" required defaultValue={form?.category || ''} placeholder="اختر فئة موجودة أو اكتب جديدة" list="product-categories" autoComplete="off" data-testid="input-product-category" />
+      <datalist id="product-categories">{categories.map(c => <option key={c} value={c} />)}</datalist>
       <Field label="سعر الشراء (ج.م)" name="purchasePrice" type="number" min="0" step="0.01" required defaultValue={form?.purchasePrice ?? ''} data-testid="input-product-cost" />
       <Field label="سعر البيع (ج.م)" name="sellingPrice" type="number" min="0" step="0.01" required defaultValue={form?.sellingPrice ?? ''} data-testid="input-product-price" />
       <Field label="الكمية الحالية" name="quantity" type="number" min="0" required defaultValue={form?.quantity ?? 0} data-testid="input-product-quantity" />
@@ -276,7 +267,7 @@ function SalesPage() {
   };
   const checkout = async () => {
     setError(''); setNotice('');
-    try { await createSale.mutateAsync({ data: { items: cart } }); setCart([]); setNotice('تم تسجيل عملية البيع وتحديث المخزون.'); await Promise.all([client.invalidateQueries({ queryKey: getListSalesQueryKey() }), client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getGetReportsQueryKey() })]); }
+    try { await createSale.mutateAsync({ data: { items: cart } }); setCart([]); setNotice('تم تسجيل عملية البيع وتحديث المخزون.'); await Promise.all([client.invalidateQueries({ queryKey: getListSalesQueryKey() }), client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getGetReportsQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() })]); }
     catch (e) { setError(getErrorMessage(e)); }
   };
   if (productsQ.isLoading || salesQ.isLoading) return <LoadingBlock />;
@@ -328,12 +319,20 @@ function ReportsPage() {
   const [from, setFrom] = useState(initialFrom); const [to, setTo] = useState(initialTo); const [range, setRange] = useState({ from: initialFrom, to: initialTo });
   const q = useGetReports(range, api); const report = q.data;
   const submit = (e: FormEvent) => { e.preventDefault(); if (from <= to) setRange({ from, to }); };
+  const exportCsv = () => {
+    if (!report) return;
+    const cell = (v: string | number) => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t) && typeof v !== 'number') t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
+    const rows: (string | number)[][] = [['تقرير تاجر'], ['من', range.from, 'إلى', range.to], [], ['إجمالي المبيعات (ج.م)', report.totalSales], ['الربح التقديري قبل المصروفات التشغيلية والضرائب (ج.م) - محسوب بتكلفة المنتج وقت البيع', report.estimatedProfit], ['عدد عمليات البيع', report.salesCount], [], ['التاريخ', 'المبيعات (ج.م)', 'الربح التقديري (ج.م)'], ...(report.daily || []).map(d => [d.date, d.sales, d.profit]), [], ['الأكثر مبيعاً', 'الكمية', 'الإيراد (ج.م)'], ...(report.bestSellers || []).map(b => [b.name, b.quantity, b.revenue])];
+    const csv = '\uFEFF' + rows.map(r => r.map(cell).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = `tager-report_${range.from}_${range.to}.csv`; document.body.append(a); a.click(); a.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   if (q.isLoading) return <LoadingBlock />;
   if (q.isError || !report) return <ErrorBlock retry={() => q.refetch()} />;
   const daily = report.daily || []; const max = Math.max(1, ...daily.flatMap(d => [Number(d.sales || 0), Number(d.profit || 0)]));
   const best = report.bestSellers || [];
   return <div className="fade-up">
-    <PageTitle title="التقارير" subtitle="صورة أوضح عن أداء متجرك خلال الفترة التي تختارها." />
+    <PageTitle title="التقارير" subtitle="صورة أوضح عن أداء متجرك خلال الفترة التي تختارها." action={<Button secondary testId="button-export-report" onClick={exportCsv}><Download size={15} />تصدير التقرير CSV</Button>} />
     <form onSubmit={submit} className="panel mb-5 flex flex-wrap items-end gap-3 p-4">
       <div className="flex items-center gap-2 self-center text-sm font-bold text-[#344357]"><CalendarDays size={18} className="text-[#286247]" />الفترة</div>
       <Field label="من تاريخ" type="date" value={from} onChange={e => setFrom(e.target.value)} data-testid="input-report-from" />
@@ -343,7 +342,7 @@ function ReportsPage() {
     </form>
     <div className="mb-5 grid gap-4 sm:grid-cols-3">
       <StatCard icon={Wallet} label="إجمالي المبيعات" value={<EGP amount={report.totalSales} />} note="خلال الفترة المحددة" accent="bg-[#e8f2ec] text-[#286247]" />
-      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={report.estimatedProfit} />} note="تقدير الأرباح بعد تكلفة البضاعة" accent="bg-[#edf1f6] text-[#426181]" />
+      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={report.estimatedProfit} />} note="قبل المصروفات التشغيلية والضرائب، بتكلفة المنتج وقت البيع" accent="bg-[#edf1f6] text-[#426181]" />
       <StatCard icon={ShoppingBag} label="عدد عمليات البيع" value={Number(report.salesCount || 0).toLocaleString('ar-EG')} note="عملية خلال الفترة" accent="bg-[#f5efe4] text-[#9b7842]" />
     </div>
     <div className="grid gap-5 xl:grid-cols-[1.45fr_.8fr]">
@@ -357,26 +356,25 @@ function ReportsPage() {
 }
 
 function Landing() {
-  const { enterDemo } = useDemo(); const [, setLocation] = useLocation();
   return <div dir="rtl" className="min-h-[100dvh] overflow-hidden bg-[#f7f6f1] text-[#1d2d42]">
     <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10"><Link href="/" className="flex items-center gap-3" data-testid="link-home-brand"><img src={`${basePath}/logo.svg`} className="h-11 w-11 rounded-xl" alt="شعار تاجر" /><div><b className="block text-xl">تاجر</b><span className="text-[10px] text-[#74818c]">رفيق شغلك كل يوم</span></div></Link><div className="flex items-center gap-2"><Link href="/sign-in" className="rounded-xl px-4 py-2.5 text-sm font-bold text-[#344357] hover:bg-white" data-testid="link-sign-in">تسجيل الدخول</Link><Link href="/sign-up" className="hidden rounded-xl bg-[#286247] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#204f39] sm:inline-flex" data-testid="link-sign-up">إنشاء حساب</Link></div></header>
     <main>
       <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-10 md:grid-cols-[1.03fr_.97fr] md:px-10 md:pb-24 md:pt-16">
-        <div className="fade-up"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8e5dc] bg-[#edf4ef] px-3 py-1.5 text-xs font-bold text-[#286247]"><span className="h-2 w-2 rounded-full bg-[#43835e]" />إدارة أسهل لمتجرك الصغير</div><h1 className="m-0 max-w-[630px] text-[42px] font-bold leading-[1.35] tracking-tight md:text-[60px]">كل تفاصيل متجرك،<br /><span className="text-[#347454]">في متناول يدك.</span></h1><p className="mt-5 max-w-[510px] text-base leading-8 text-[#697785] md:text-lg">تاجر يجمع المخزون والمبيعات والموردين في مساحة واحدة واضحة. حتى تعرف ماذا تبيع، وماذا تحتاج، وكيف يمشي يومك.</p><div className="mt-8 flex flex-wrap gap-3"><button onClick={() => { enterDemo(); setLocation('/app'); }} data-testid="button-enter-demo" className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#286247] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(40,98,71,.16)] transition hover:-translate-y-0.5 hover:bg-[#204f39]"><Store size={17} />جرّب المتجر التجريبي<ArrowLeft size={15} /></button><Link href="/sign-up" className="inline-flex h-12 items-center rounded-xl border border-[#d9dfd9] bg-white px-5 text-sm font-bold text-[#344357] hover:border-[#a9bdb0]" data-testid="button-create-account">ابدأ بحسابك</Link></div><div className="mt-7 flex items-center gap-3 text-xs text-[#78848e]"><span className="flex -space-x-2 space-x-reverse">{['م', 'س', 'ع'].map((c, i) => <span key={c} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#f7f6f1] text-xs font-bold ${['bg-[#dbe9df] text-[#286247]', 'bg-[#e7eaf0] text-[#405e7e]', 'bg-[#f1e8d9] text-[#8f7145]'][i]}`}>{c}</span>)}</span><span>مصمم لليوم الحقيقي في المتجر</span></div></div>
+        <div className="fade-up"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8e5dc] bg-[#edf4ef] px-3 py-1.5 text-xs font-bold text-[#286247]"><span className="h-2 w-2 rounded-full bg-[#43835e]" />إدارة أسهل لمتجرك الصغير</div><h1 className="m-0 max-w-[630px] text-[42px] font-bold leading-[1.35] tracking-tight md:text-[60px]">كل تفاصيل متجرك،<br /><span className="text-[#347454]">في متناول يدك.</span></h1><p className="mt-5 max-w-[510px] text-base leading-8 text-[#697785] md:text-lg">تاجر يجمع المخزون والمبيعات والموردين في مساحة واحدة واضحة. حتى تعرف ماذا تبيع، وماذا تحتاج، وكيف يمشي يومك.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/sign-up" data-testid="button-create-account" className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#286247] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(40,98,71,.16)] transition hover:-translate-y-0.5 hover:bg-[#204f39]"><Store size={17} />ابدأ بحسابك<ArrowLeft size={15} /></Link><Link href="/sign-in" className="inline-flex h-12 items-center rounded-xl border border-[#d9dfd9] bg-white px-5 text-sm font-bold text-[#344357] hover:border-[#a9bdb0]" data-testid="button-hero-sign-in">لديّ حساب</Link></div><div className="mt-7 flex items-center gap-3 text-xs text-[#78848e]"><span className="flex -space-x-2 space-x-reverse">{['م', 'س', 'ع'].map((c, i) => <span key={c} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#f7f6f1] text-xs font-bold ${['bg-[#dbe9df] text-[#286247]', 'bg-[#e7eaf0] text-[#405e7e]', 'bg-[#f1e8d9] text-[#8f7145]'][i]}`}>{c}</span>)}</span><span>مصمم لليوم الحقيقي في المتجر</span></div></div>
         <div className="relative mx-auto w-full max-w-[540px]">
           <div className="absolute -left-8 top-4 h-48 w-48 rounded-full bg-[#dceade]/70 blur-3xl" />
           <div className="relative overflow-hidden rounded-[28px] border border-[#e5e8e2] bg-[#fffefa] p-5 shadow-[0_22px_65px_rgba(34,52,68,.11)] md:p-7">
-            <div className="mb-6 flex items-start justify-between"><div><div className="text-xs text-[#87919b]">ملخص المتجر</div><div className="mt-1 text-lg font-bold">الأربعاء، ١٢ يونيو</div></div><span className="rounded-xl bg-[#edf4ef] p-2.5 text-[#286247]"><Activity size={19} /></span></div>
-            <div className="rounded-2xl bg-[#18334b] p-5 text-white"><div className="text-xs text-[#c2d3d6]">مبيعات هذا الأسبوع</div><div className="mt-2 flex items-end justify-between"><div className="text-3xl font-bold">١٨٬٧٥٠ <small className="text-sm font-medium text-[#b9cbd0]">ج.م</small></div><div className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px] text-[#c5e2ce]"><ArrowUpLeft size={12} /> ١٢٪</div></div><div className="mt-5 flex h-16 items-end gap-2">{[30, 47, 38, 68, 52, 84, 72, 98, 62, 80, 57, 91].map((h, i) => <div key={i} className="flex-1 rounded-t bg-[#81b896]" style={{ height: `${h}%`, opacity: .4 + (i / 20) }} />)}</div></div>
-            <div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-2xl border border-[#e8ebe6] p-4"><div className="mb-3 flex items-center justify-between text-xs text-[#7b8792]">صافي الربح <Activity size={15} className="text-[#347454]" /></div><div className="font-bold">٤٬٢٨٠ <small className="text-[10px] font-normal text-[#84909a]">ج.م</small></div><div className="mt-2 text-[10px] text-[#6c987b]">هذا الأسبوع</div></div><div className="rounded-2xl border border-[#e8ebe6] p-4"><div className="mb-3 flex items-center justify-between text-xs text-[#7b8792]">حالة المخزون <Boxes size={15} className="text-[#927442]" /></div><div className="font-bold">٤٢ <small className="text-[10px] font-normal text-[#84909a]">منتج</small></div><div className="mt-2 text-[10px] text-[#b47748]">٣ أصناف قاربت على النفاد</div></div></div>
-            <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#f6f7f3] px-4 py-3"><div className="rounded-lg bg-[#fff0e9] p-2 text-[#b56749]"><AlertTriangle size={16} /></div><div className="flex-1"><div className="text-xs font-bold">تنبيه المخزون</div><div className="mt-1 text-[10px] text-[#84909a]">زيت زيتون — المتبقي ٢ فقط</div></div><ArrowLeft size={15} className="text-[#89949b]" /></div>
+            <div className="mb-6 flex items-start justify-between"><div><div className="text-xs text-[#87919b]">ملخص المتجر</div><div className="mt-1 text-lg font-bold">ما الذي ستراه يومياً</div></div><span className="rounded-xl bg-[#edf4ef] p-2.5 text-[#286247]"><Activity size={19} /></span></div>
+            <div className="rounded-2xl bg-[#18334b] p-5 text-white"><div className="text-xs text-[#c2d3d6]">مبيعاتك من دفترك أنت</div><div className="mt-2 flex items-end justify-between"><div className="text-xl font-bold leading-8">كل بيع تسجله يظهر هنا بقيمته الحقيقية</div><div className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-1 text-[10px] text-[#c5e2ce]"><ArrowUpLeft size={12} /> يومي</div></div><p className="mb-0 mt-4 text-xs leading-6 text-[#c2d3d6]">لا أرقام افتراضية: اللوحة تبدأ فارغة وتمتلئ من عملياتك فقط.</p></div>
+            <div className="mt-4 grid grid-cols-2 gap-3"><div className="rounded-2xl border border-[#e8ebe6] p-4"><div className="mb-3 flex items-center justify-between text-xs text-[#7b8792]">الربح التقديري <Activity size={15} className="text-[#347454]" /></div><div className="text-sm font-bold">بتكلفة وقت البيع</div><div className="mt-2 text-[10px] text-[#6c987b]">قبل المصروفات والضرائب</div></div><div className="rounded-2xl border border-[#e8ebe6] p-4"><div className="mb-3 flex items-center justify-between text-xs text-[#7b8792]">حالة المخزون <Boxes size={15} className="text-[#927442]" /></div><div className="text-sm font-bold">رصيد كل صنف</div><div className="mt-2 text-[10px] text-[#b47748]">تنبيه عند حد إعادة الطلب</div></div></div>
+            <div className="mt-4 flex items-center gap-3 rounded-xl bg-[#f6f7f3] px-4 py-3"><div className="rounded-lg bg-[#fff0e9] p-2 text-[#b56749]"><AlertTriangle size={16} /></div><div className="flex-1"><div className="text-xs font-bold">تنبيه المخزون</div><div className="mt-1 text-[10px] text-[#84909a]">تحدد الحد الأدنى لكل منتج ونذكّرك به</div></div><ArrowLeft size={15} className="text-[#89949b]" /></div>
           </div>
-          <div className="absolute -bottom-5 -right-5 hidden items-center gap-3 rounded-2xl border border-[#e7e9e3] bg-white p-3 shadow-lg sm:flex"><span className="rounded-xl bg-[#eaf4ed] p-2 text-[#286247]"><Check size={17} /></span><div><div className="text-xs font-bold">بيع مسجل بنجاح</div><div className="mt-1 text-[10px] text-[#87919b]">تم تحديث المخزون تلقائياً</div></div></div>
+          <div className="absolute -bottom-5 -right-5 hidden items-center gap-3 rounded-2xl border border-[#e7e9e3] bg-white p-3 shadow-lg sm:flex"><span className="rounded-xl bg-[#eaf4ed] p-2 text-[#286247]"><Check size={17} /></span><div><div className="text-xs font-bold">كل بيع وكل استلام</div><div className="mt-1 text-[10px] text-[#87919b]">تم تحديث المخزون تلقائياً</div></div></div>
         </div>
       </section>
       <section className="border-y border-[#e8e9e4] bg-[#fffefa] py-14"><div className="mx-auto max-w-7xl px-5 md:px-10"><div className="mb-8 max-w-xl"><div className="text-xs font-bold text-[#347454]">أدوات يومك في مكان واحد</div><h2 className="mt-2 text-2xl font-bold md:text-3xl">إدارة بسيطة، بدون تفاصيل تضيع وقتك.</h2></div><div className="grid gap-4 md:grid-cols-3">{[{ icon: Package, title: 'مخزون واضح', text: 'اعرف الكمية المتاحة وما يقترب من حد إعادة الطلب قبل أن يفوتك.' }, { icon: ShoppingCart, title: 'مبيعات مرتبة', text: 'سجّل عملية البيع في لحظتها ودع تاجر يحدّث الكميات نيابةً عنك.' }, { icon: FileBarChart2, title: 'قراءة سريعة للأداء', text: 'تابع الإيرادات والأرباح والمنتجات الأكثر حركة خلال أي فترة.' }].map(({ icon: Icon, title, text }) => <article key={title} className="rounded-2xl border border-[#e8ebe6] bg-[#fffefa] p-5"><span className="inline-flex rounded-xl bg-[#eaf4ed] p-3 text-[#286247]"><Icon size={19} /></span><h3 className="mb-2 mt-4 text-base font-bold">{title}</h3><p className="m-0 text-sm leading-7 text-[#778391]">{text}</p></article>)}</div></div></section>
-      <section className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-14 md:grid-cols-2 md:px-10 md:py-20"><div><div className="text-xs font-bold text-[#347454]">معلومة وقت ما تحتاجها</div><h2 className="mt-2 text-2xl font-bold md:text-3xl">القرار الأفضل يبدأ بصورة أوضح.</h2><p className="mt-3 max-w-lg text-sm leading-7 text-[#778391]">بدلاً من أوراق متفرقة وحسابات ذهنية، شاهد مبيعاتك ومخزونك في لوحة واحدة، وارجع لتقارير بسيطة تساعدك تخطط لطلبك القادم.</p><button onClick={() => { enterDemo(); setLocation('/app'); }} data-testid="button-demo-secondary" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#cbd8ce] bg-white px-4 py-3 text-sm font-bold text-[#286247] hover:bg-[#edf4ef]">استكشف لوحة المتجر<ArrowLeft size={15} /></button></div><div className="rounded-[24px] bg-[#eaf0e9] p-6 md:p-8"><div className="rounded-2xl bg-[#fffefa] p-5 shadow-sm"><div className="flex items-center justify-between"><b className="text-sm">أكثر المنتجات مبيعاً</b><span className="text-[10px] text-[#82909a]">هذا الشهر</span></div>{[['قهوة مطحونة', '٧٢ قطعة', 88], ['شاي أخضر', '٥٤ قطعة', 66], ['بسكويت سادة', '٣٨ قطعة', 46]].map(([label, count, width]) => <div key={String(label)} className="mt-5"><div className="mb-2 flex justify-between text-xs"><span>{label}</span><span className="text-[#778391]">{count}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#edf0eb]"><div className="h-full rounded-full bg-[#4a8865]" style={{ width: `${width}%` }} /></div></div>)}</div></div></section>
-      <section className="mx-5 mb-14 rounded-[26px] bg-[#18334b] px-6 py-10 text-center text-white md:mx-auto md:mb-20 md:max-w-7xl md:px-10 md:py-14"><div className="mx-auto max-w-xl"><div className="text-xs font-bold text-[#b9d9c2]">ابدأ من هنا</div><h2 className="mb-3 mt-2 text-2xl font-bold md:text-3xl">جرّب تاجر على بيانات متجر جاهزة.</h2><p className="mb-6 text-sm leading-7 text-[#c3d0d7]">استكشف الصفحات وسجّل عملياتك في وضع التجربة — دون الحاجة لإنشاء حساب.</p><button onClick={() => { enterDemo(); setLocation('/app'); }} data-testid="button-enter-demo-bottom" className="inline-flex items-center gap-2 rounded-xl bg-[#79ac89] px-5 py-3 text-sm font-bold text-[#14334a] transition hover:bg-[#94c2a1]">الدخول إلى التجربة<ArrowLeft size={15} /></button></div></section>
+      <section className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-14 md:grid-cols-2 md:px-10 md:py-20"><div><div className="text-xs font-bold text-[#347454]">معلومة وقت ما تحتاجها</div><h2 className="mt-2 text-2xl font-bold md:text-3xl">القرار الأفضل يبدأ بصورة أوضح.</h2><p className="mt-3 max-w-lg text-sm leading-7 text-[#778391]">بدلاً من أوراق متفرقة وحسابات ذهنية، شاهد مبيعاتك ومخزونك في لوحة واحدة، وارجع لتقارير بسيطة تساعدك تخطط لطلبك القادم.</p><Link href="/sign-up" data-testid="link-signup-secondary" className="mt-3 inline-flex items-center gap-2 rounded-xl border border-[#cbd8ce] bg-white px-4 py-3 text-sm font-bold text-[#286247] hover:bg-[#edf4ef]">أنشئ حساب متجرك<ArrowLeft size={15} /></Link></div><div className="rounded-[24px] bg-[#eaf0e9] p-6 md:p-8"><div className="rounded-2xl bg-[#fffefa] p-5 shadow-sm"><div className="flex items-center justify-between"><b className="text-sm">أكثر المنتجات مبيعاً</b><span className="text-[10px] text-[#82909a]">لأي فترة تختارها</span></div>{[['رتّب أصنافك حسب الكمية المباعة', 'من مبيعاتك'], ['اعرف إيراد كل صنف', 'بالجنيه'], ['صدّر التقرير لملف CSV', 'للمحاسب']].map(([label, hint]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs"><span>{label}</span><span className="text-[#778391]">{hint}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#edf0eb]" /></div>)}</div></div></section>
+      <section className="mx-5 mb-14 rounded-[26px] bg-[#18334b] px-6 py-10 text-center text-white md:mx-auto md:mb-20 md:max-w-7xl md:px-10 md:py-14"><div className="mx-auto max-w-xl"><div className="text-xs font-bold text-[#b9d9c2]">ابدأ من هنا</div><h2 className="mb-3 mt-2 text-2xl font-bold md:text-3xl">ابدأ دفتر متجرك الحقيقي.</h2><p className="mb-6 text-sm leading-7 text-[#c3d0d7]">أنشئ حسابك، أضف منتجاتك وأرصدتها الافتتاحية، وكل عملية بعدها تُسجَّل باسم متجرك وحده.</p><Link href="/sign-up" data-testid="link-signup-bottom" className="inline-flex items-center gap-2 rounded-xl bg-[#79ac89] px-5 py-3 text-sm font-bold text-[#14334a] transition hover:bg-[#94c2a1]">إنشاء حساب<ArrowLeft size={15} /></Link></div></section>
     </main>
     <footer className="border-t border-[#e5e8e2] px-5 py-6 text-center text-xs text-[#89939b]">تاجر — مساحة أوضح لإدارة كل يوم في متجرك</footer>
   </div>;
@@ -384,16 +382,14 @@ function Landing() {
 
 function HomeRoute() {
   const { isLoaded, isSignedIn } = useAuth();
-  const { demo } = useDemo();
   if (!isLoaded) return <div className="min-h-[100dvh] bg-[#f7f6f1]" />;
-  if (demo) return <Redirect to="/app" />;
   if (isSignedIn) return <Redirect to="/app" />;
   return <Landing />;
 }
 function ProtectedPage({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn } = useAuth(); const { demo } = useDemo();
+  const { isLoaded, isSignedIn } = useAuth();
   if (!isLoaded) return <div className="min-h-[100dvh] bg-[#f7f6f1]" />;
-  if (!demo && !isSignedIn) return <Redirect to="/" />;
+  if (!isSignedIn) return <Redirect to="/" />;
   return <Shell>{children}</Shell>;
 }
 function AppRoute() { return <ProtectedPage><Overview /></ProtectedPage>; }
@@ -401,7 +397,8 @@ function ProductsRoute() { return <ProtectedPage><ProductPage /></ProtectedPage>
 function SalesRoute() { return <ProtectedPage><SalesPage /></ProtectedPage>; }
 function SuppliersRoute() { return <ProtectedPage><SupplierPage /></ProtectedPage>; }
 function ReportsRoute() { return <ProtectedPage><ReportsPage /></ProtectedPage>; }
-function InventoryMovementsRoute() { const { demo } = useDemo(); return <ProtectedPage><InventoryMovementsPage demo={demo} /></ProtectedPage>; }
+function InventoryMovementsRoute() { return <ProtectedPage><InventoryMovementsPage /></ProtectedPage>; }
+function PurchasesRoute() { return <ProtectedPage><PurchasesPage /></ProtectedPage>; }
 function NotFoundPage() { return <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#f7f6f1] p-6 text-center" dir="rtl"><div className="text-6xl font-bold text-[#286247]">٤٠٤</div><h1 className="mt-4 text-2xl font-bold">الصفحة غير موجودة</h1><p className="text-sm text-[#778391]">قد يكون الرابط غير صحيح أو أن الصفحة نُقلت.</p><Link href="/" className="mt-4 rounded-xl bg-[#286247] px-5 py-3 text-sm font-bold text-white" data-testid="link-not-found-home">العودة للرئيسية</Link></div>; }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
@@ -415,18 +412,19 @@ function RoutedApp() {
     localization={arSA}
     routerPush={to => setLocation(stripBase(to))}
     routerReplace={to => setLocation(stripBase(to), { replace: true })}>
-    <QueryClientProvider client={queryClient}><TooltipProvider><DemoProvider><CacheUserWatcher /><RoutedErrorBoundary><Switch>
+    <QueryClientProvider client={queryClient}><TooltipProvider><CacheUserWatcher /><RoutedErrorBoundary><Switch>
       <Route path="/" component={HomeRoute} />
       <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sign-up/*?" component={SignUpPage} />
       <Route path="/app" component={AppRoute} />
       <Route path="/products" component={ProductsRoute} />
       <Route path="/sales" component={SalesRoute} />
+      <Route path="/purchases" component={PurchasesRoute} />
       <Route path="/suppliers" component={SuppliersRoute} />
       <Route path="/inventory-movements" component={InventoryMovementsRoute} />
       <Route path="/reports" component={ReportsRoute} />
       <Route component={NotFoundPage} />
-    </Switch></RoutedErrorBoundary><Toaster /></DemoProvider></TooltipProvider></QueryClientProvider>
+    </Switch></RoutedErrorBoundary><Toaster /></TooltipProvider></QueryClientProvider>
   </ClerkProvider>;
 }
 

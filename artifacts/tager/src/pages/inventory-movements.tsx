@@ -16,7 +16,6 @@ import {
 } from '@workspace/api-client-react';
 import { Activity, AlertTriangle, ArrowDownLeft, ArrowUpLeft, CalendarDays, Check, Clock3, Download, Package, RotateCw, Search, Truck } from 'lucide-react';
 
-type InventoryMovementsPageProps = { demo: boolean };
 const PAGE_SIZE = 25;
 
 const movementLabels: Record<InventoryMovement['type'], string> = {
@@ -91,9 +90,8 @@ function MovementRow({ movement }: { movement: InventoryMovement }) {
   </article>;
 }
 
-export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
+export function InventoryMovementsPage() {
   const client = useQueryClient();
-  const headers = demo ? { 'x-tager-demo': 'true' } : undefined;
   const [search, setSearch] = useState('');
   const [type, setType] = useState<ListInventoryMovementsType | ''>('');
   const [from, setFrom] = useState('');
@@ -119,10 +117,10 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
     page,
     pageSize: PAGE_SIZE,
   }), [exportParams, page]);
-  const movementsQ = useListInventoryMovements(params, { request: { headers } });
-  const productsQ = useListProducts({ request: { headers } });
-  const suppliersQ = useListSuppliers({ request: { headers } });
-  const createSupply = useCreateInventorySupply({ request: { headers } });
+  const movementsQ = useListInventoryMovements(params);
+  const productsQ = useListProducts();
+  const suppliersQ = useListSuppliers();
+  const createSupply = useCreateInventorySupply();
   const movements = movementsQ.data?.items || [];
   const totalMovements = movementsQ.data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(totalMovements / PAGE_SIZE));
@@ -169,6 +167,7 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
         client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() }),
         client.invalidateQueries({ queryKey: getListProductsQueryKey() }),
         client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }),
+        client.invalidateQueries({ queryKey: ['/api/reports'] }),
       ]);
       requestId.current = null;
       setQuantity('');
@@ -191,7 +190,7 @@ export function InventoryMovementsPage({ demo }: InventoryMovementsPageProps) {
     setExportError('');
     setIsExporting(true);
     try {
-      const csv = await exportInventoryMovements(exportParams, { headers });
+      const csv = await exportInventoryMovements(exportParams);
       const file = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(file);
       const link = document.createElement('a');

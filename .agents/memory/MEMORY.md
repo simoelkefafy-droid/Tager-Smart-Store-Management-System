@@ -1,0 +1,1 @@
+- [Real store data](real-store-data.md) — preserve existing records, no automatic demo data; purchases use weighted average cost and historical sale snapshots.

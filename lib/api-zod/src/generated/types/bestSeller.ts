@@ -11,4 +11,8 @@ export interface BestSeller {
   name: string;
   quantity: number;
   revenue: number;
+  /** @nullable */
+  cost: number | null;
+  /** @nullable */
+  profit: number | null;
 }

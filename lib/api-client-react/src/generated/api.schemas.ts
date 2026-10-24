@@ -210,7 +210,11 @@ export interface Dashboard {
 export interface DailyReport {
   date: string;
   sales: number;
-  profit: number;
+  /** @nullable */
+  profit: number | null;
+  /** @nullable */
+  cost: number | null;
+  salesCount: number;
 }
 
 export interface BestSeller {
@@ -218,11 +222,30 @@ export interface BestSeller {
   name: string;
   quantity: number;
   revenue: number;
+  /** @nullable */
+  cost: number | null;
+  /** @nullable */
+  profit: number | null;
 }
 
 export interface Report {
   totalSales: number;
-  estimatedProfit: number;
+  /** @nullable */
+  estimatedProfit: number | null;
+  /** @nullable */
+  totalCost: number | null;
+  missingCostLines: number;
+  todaySales: number;
+  monthSales: number;
+  todayCount: number;
+  monthCount: number;
+  previousSales: number;
+  previousFrom: string;
+  previousTo: string;
+  /** @nullable */
+  salesChangePercent: number | null;
+  timeZone: string;
+  products: BestSeller[];
   salesCount: number;
   daily: DailyReport[];
   bestSellers: BestSeller[];
@@ -280,6 +303,10 @@ export const ExportInventoryMovementsType = {
 } as const;
 
 export type GetReportsParams = {
+/**
+ * @minimum 1
+ */
+productId?: number;
 from: string;
 to: string;
 };

@@ -14,3 +14,7 @@ Use the quantity-weighted average purchase cost for new receipts, rounded to pia
 **Why:** New purchase prices should not retroactively change historical profits, and existing stock must participate in the new average.
 
 **How to apply:** Receipt, stock balance, average cost and movement must commit atomically. Do not fabricate historical movements for untracked stock; record a clearly labeled current opening balance instead.
+
+Sales reporting uses Cairo calendar days and compares equal-length consecutive calendar periods. A zero previous-period revenue has no meaningful percentage growth; missing historical cost must stay unknown rather than use today's price.
+
+**Why:** Shop owners need consistent daily cutoffs around midnight and daylight saving time, comparable periods, and no invented historical profit.

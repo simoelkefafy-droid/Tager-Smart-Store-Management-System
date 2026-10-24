@@ -9,5 +9,9 @@
 export interface DailyReport {
   date: Date;
   sales: number;
-  profit: number;
+  /** @nullable */
+  profit: number | null;
+  /** @nullable */
+  cost: number | null;
+  salesCount: number;
 }

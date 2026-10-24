@@ -12,19 +12,20 @@ import {
   getListSalesQueryKey, getListSuppliersQueryKey,
   getListInventoryMovementsQueryKey,
   useCreateProduct, useCreateSale, useCreateSupplier, useDeleteProduct,
-  useDeleteSupplier, useGetDashboard, useGetReports, useListProducts,
+  useDeleteSupplier, useGetDashboard, useListProducts,
   useListSales, useListSuppliers, useUpdateProduct, useUpdateSupplier,
   type Product, type Supplier, type Sale,
 } from '@workspace/api-client-react';
 import {
   Activity, AlertTriangle, ArrowLeft, ArrowUpLeft, BarChart3,
-  Boxes, CalendarDays, Check, ChevronDown, CircleHelp, FileBarChart2, Filter,
-  Home, LogOut, Menu, Package, Plus, Search, ShoppingBag, ShoppingCart,
-  Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users, ReceiptText, Download,
+  Boxes, Check, ChevronDown, CircleHelp, FileBarChart2, Filter,
+  Home, LogOut, Menu, Package, Plus, Search, ShoppingCart,
+  Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users, ReceiptText,
 } from 'lucide-react';
 import { Route, Switch, Router as WouterRouter, Link, Redirect, useLocation } from 'wouter';
 import { InventoryMovementsPage } from '@/pages/inventory-movements';
 import { PurchasesPage } from '@/pages/purchases';
+import { ReportsPage } from '@/pages/reports';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -309,49 +310,6 @@ function SupplierPage() {
     {filtered.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((s, index) => <article key={s.id} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-md" data-testid={`card-supplier-${s.id}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-xl font-bold ${['bg-[#eaf2ed] text-[#286247]', 'bg-[#edf1f6] text-[#426181]', 'bg-[#f5efe4] text-[#9b7842]'][index % 3]}`}><Users size={19} /></div><div><h2 className="m-0 text-base font-bold">{s.name}</h2><div className="mt-1 text-xs text-[#82909b]">مورد رقم {s.id}</div></div></div><div className="flex"><button onClick={() => { setForm(s); setError(''); }} data-testid={`button-edit-supplier-${s.id}`} aria-label="تعديل المورد" className="rounded-lg p-2 text-[#687789] hover:bg-[#edf3ef]"><Pencil size={15} /></button><button onClick={() => deleteItem(s)} data-testid={`button-delete-supplier-${s.id}`} aria-label="حذف المورد" className="rounded-lg p-2 text-[#929ba2] hover:bg-[#fff0ed] hover:text-[#b44c43]"><Trash2 size={15} /></button></div></div><div className="mt-5 grid gap-3 border-t border-[#edf0eb] pt-4"><div className="flex items-center gap-2 text-sm text-[#617080]"><span className="text-xs font-semibold text-[#87919b]">الهاتف</span><span dir="ltr">{s.phone || '—'}</span></div><div><div className="mb-2 text-xs font-semibold text-[#87919b]">الأصناف التي يوفرها</div><div className="rounded-lg bg-[#f8f9f6] px-3 py-2 text-sm text-[#425163]">{s.products || 'لم تُحدد أصناف بعد'}</div></div></div></article>)}</div> : <div className="panel"><EmptyState title={search ? 'لا توجد نتائج مطابقة' : 'سجّل موردي متجرك'} body={search ? 'جرّب البحث باسم أو رقم هاتف مختلف.' : 'احتفظ ببيانات التواصل والأصناف التي يوفرها كل مورد.'} action={!search ? <Button testId="button-empty-add-supplier" onClick={() => setForm(null)}><Plus size={15} />إضافة مورد</Button> : undefined} /></div>}
     {error && <div className="mt-3 rounded-xl bg-[#fff1ef] p-3 text-sm text-[#a94842]" data-testid="status-supplier-error">{error}</div>}
     {form !== false && <Dialog title={form ? 'تعديل بيانات المورد' : 'إضافة مورد جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4"><Field label="اسم المورد" name="name" required defaultValue={form?.name || ''} data-testid="input-supplier-name" /><Field label="رقم الهاتف" name="phone" type="tel" defaultValue={form?.phone || ''} data-testid="input-supplier-phone" /><Field label="الأصناف التي يوفرها" name="products" required defaultValue={form?.products || ''} placeholder="مثال: مشروبات، وجبات خفيفة" data-testid="input-supplier-products" />{error && <p className="m-0 text-sm text-[#b44c43]" data-testid="status-supplier-error">{error}</p>}<div className="flex gap-2"><Button type="submit" testId="button-save-supplier" disabled={create.isPending || update.isPending}>{create.isPending || update.isPending ? 'جارٍ الحفظ...' : 'حفظ المورد'}</Button><Button secondary testId="button-cancel-supplier" onClick={() => setForm(false)}>إلغاء</Button></div></form></Dialog>}
-  </div>;
-}
-
-function ReportsPage() {
-  const api = useApiOptions(); const today = new Date();
-  const formatLocalDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const initialFrom = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`; const initialTo = formatLocalDate(today);
-  const [from, setFrom] = useState(initialFrom); const [to, setTo] = useState(initialTo); const [range, setRange] = useState({ from: initialFrom, to: initialTo });
-  const q = useGetReports(range, api); const report = q.data;
-  const submit = (e: FormEvent) => { e.preventDefault(); if (from <= to) setRange({ from, to }); };
-  const exportCsv = () => {
-    if (!report) return;
-    const cell = (v: string | number) => { let t = String(v ?? ''); if (/^[=+\-@\t\r]/.test(t) && typeof v !== 'number') t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
-    const rows: (string | number)[][] = [['تقرير تاجر'], ['من', range.from, 'إلى', range.to], [], ['إجمالي المبيعات (ج.م)', report.totalSales], ['الربح التقديري قبل المصروفات التشغيلية والضرائب (ج.م) - محسوب بتكلفة المنتج وقت البيع', report.estimatedProfit], ['عدد عمليات البيع', report.salesCount], [], ['التاريخ', 'المبيعات (ج.م)', 'الربح التقديري (ج.م)'], ...(report.daily || []).map(d => [d.date, d.sales, d.profit]), [], ['الأكثر مبيعاً', 'الكمية', 'الإيراد (ج.م)'], ...(report.bestSellers || []).map(b => [b.name, b.quantity, b.revenue])];
-    const csv = '\uFEFF' + rows.map(r => r.map(cell).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    const a = document.createElement('a'); a.href = url; a.download = `tager-report_${range.from}_${range.to}.csv`; document.body.append(a); a.click(); a.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  };
-  if (q.isLoading) return <LoadingBlock />;
-  if (q.isError || !report) return <ErrorBlock retry={() => q.refetch()} />;
-  const daily = report.daily || []; const max = Math.max(1, ...daily.flatMap(d => [Number(d.sales || 0), Number(d.profit || 0)]));
-  const best = report.bestSellers || [];
-  return <div className="fade-up">
-    <PageTitle title="التقارير" subtitle="صورة أوضح عن أداء متجرك خلال الفترة التي تختارها." action={<Button secondary testId="button-export-report" onClick={exportCsv}><Download size={15} />تصدير التقرير CSV</Button>} />
-    <form onSubmit={submit} className="panel mb-5 flex flex-wrap items-end gap-3 p-4">
-      <div className="flex items-center gap-2 self-center text-sm font-bold text-[#344357]"><CalendarDays size={18} className="text-[#286247]" />الفترة</div>
-      <Field label="من تاريخ" type="date" value={from} onChange={e => setFrom(e.target.value)} data-testid="input-report-from" />
-      <Field label="إلى تاريخ" type="date" value={to} onChange={e => setTo(e.target.value)} data-testid="input-report-to" />
-      <Button type="submit" testId="button-apply-report-filter" disabled={from > to}><Filter size={15} />تطبيق الفترة</Button>
-      {from > to && <span className="text-xs text-[#b44c43]" data-testid="status-date-error">تاريخ البداية يجب أن يسبق تاريخ النهاية.</span>}
-    </form>
-    <div className="mb-5 grid gap-4 sm:grid-cols-3">
-      <StatCard icon={Wallet} label="إجمالي المبيعات" value={<EGP amount={report.totalSales} />} note="خلال الفترة المحددة" accent="bg-[#e8f2ec] text-[#286247]" />
-      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={report.estimatedProfit} />} note="قبل المصروفات التشغيلية والضرائب، بتكلفة المنتج وقت البيع" accent="bg-[#edf1f6] text-[#426181]" />
-      <StatCard icon={ShoppingBag} label="عدد عمليات البيع" value={Number(report.salesCount || 0).toLocaleString('ar-EG')} note="عملية خلال الفترة" accent="bg-[#f5efe4] text-[#9b7842]" />
-    </div>
-    <div className="grid gap-5 xl:grid-cols-[1.45fr_.8fr]">
-      <section className="panel p-5 sm:p-6"><div className="mb-5 flex items-center justify-between"><div><h2 className="m-0 text-base font-bold">حركة المبيعات اليومية</h2><p className="mb-0 mt-1 text-xs text-[#84909a]">قيمة المبيعات لكل يوم</p></div><span className="rounded-lg bg-[#eaf4ed] p-2 text-[#286247]"><BarChart3 size={18} /></span></div>
-        {daily.length ? <div className="flex h-[230px] items-end gap-2 overflow-x-auto border-b border-[#e9ece7] pb-2" data-testid="chart-daily-sales">{daily.map(d => <div key={d.date} className="flex h-full min-w-[42px] flex-1 flex-col items-center justify-end gap-2"><div className="flex h-[88%] w-full max-w-[48px] items-end justify-center gap-1"><div title={`المبيعات ${d.sales} ج.م`} className="w-1/2 rounded-t-md bg-[#4c8b68] transition hover:bg-[#286247]" style={{ height: `${Math.max(3, Number(d.sales || 0) / max * 100)}%` }} /><div title={`الربح ${d.profit} ج.م`} className="w-1/2 rounded-t-md bg-[#b8cfbd] transition hover:bg-[#8daf96]" style={{ height: `${Math.max(3, Number(d.profit || 0) / max * 100)}%` }} /></div><span className="whitespace-nowrap text-[9px] text-[#7b8792]">{new Date(d.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}</span></div>)}</div> : <EmptyState title="لا توجد حركة في هذه الفترة" body="غيّر الفترة المحددة أو سجّل مبيعات جديدة." />}
-        {daily.length > 0 && <div className="mt-4 flex flex-wrap gap-4 text-xs text-[#778391]"><span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-sm bg-[#4c8b68]" />المبيعات</span><span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-sm bg-[#b8cfbd]" />الربح</span></div>}
-      </section>
-      <section className="panel overflow-hidden"><div className="border-b border-[#edf0eb] px-5 py-4"><h2 className="m-0 text-base font-bold">الأكثر مبيعاً</h2><p className="mb-0 mt-1 text-xs text-[#84909a]">حسب الكمية خلال الفترة</p></div>{best.length ? <div className="divide-y divide-[#edf0eb]">{best.slice(0, 7).map((item, i) => <div key={item.productId} className="flex items-center gap-3 px-5 py-4" data-testid={`row-bestseller-${item.productId}`}><span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${i === 0 ? 'bg-[#e9f2ec] text-[#286247]' : 'bg-[#f1f3ef] text-[#697785]'}`}>{String(i + 1).padStart(2, '0')}</span><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{item.name}</div><div className="mt-1 text-[11px] text-[#84909a]">{item.quantity} قطعة</div></div><div className="text-left text-xs font-bold"><EGP amount={item.revenue} /></div></div>)}</div> : <EmptyState title="لا توجد بيانات كافية" body="ستظهر المنتجات الأكثر مبيعاً بعد تسجيل العمليات." />}</section>
-    </div>
   </div>;
 }
 

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import purchasesRouter from "./purchases";
+import reportsRouter from "./reports";
 import { getAuth } from "@clerk/express";
 import {
   and,
@@ -32,8 +33,6 @@ import {
   DeleteProductParams,
   DeleteSupplierParams,
   GetDashboardResponse,
-  GetReportsQueryParams,
-  GetReportsResponse,
   ListInventoryMovementsQueryParams,
   ListInventoryMovementsResponse,
   ListProductsResponse,
@@ -133,6 +132,7 @@ router.use(async (req, res, next) => {
 });
 
 router.use(purchasesRouter);
+router.use(reportsRouter);
 
 function ownerId(res: { locals: Record<string, unknown> }): string {
   return String(res.locals.ownerId);
@@ -798,102 +798,6 @@ router.get("/dashboard", async (_req, res): Promise<void> => {
       lowStockCount: lowStockProducts.length,
       lowStockProducts,
       recentSales,
-    }),
-  );
-});
-
-router.get("/reports", async (req, res): Promise<void> => {
-  const readDate = (value: unknown): Date | null => {
-    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      return null;
-    }
-    const date = new Date(`${value}T00:00:00.000Z`);
-    if (Number.isNaN(date.getTime())) return null;
-    return date.toISOString().slice(0, 10) === value ? date : null;
-  };
-  const fromDate = readDate(req.query.from);
-  const toDate = readDate(req.query.to);
-  if (!fromDate || !toDate) {
-    res.status(400).json({ error: "أدخل تاريخ بداية ونهاية صالحين" });
-    return;
-  }
-  const parsed = GetReportsQueryParams.safeParse({
-    from: fromDate,
-    to: toDate,
-  });
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  if (parsed.data.from > parsed.data.to) {
-    res.status(400).json({ error: "تاريخ البداية يجب أن يسبق تاريخ النهاية" });
-    return;
-  }
-  const owner = ownerId(res);
-  const from = new Date(parsed.data.from);
-  const toExclusive = new Date(parsed.data.to);
-  toExclusive.setUTCDate(toExclusive.getUTCDate() + 1);
-  const matchingSales = await db
-    .select()
-    .from(salesTable)
-    .where(
-      and(
-        eq(salesTable.ownerId, owner),
-        gte(salesTable.createdAt, from),
-        lt(salesTable.createdAt, toExclusive),
-      ),
-    )
-    .orderBy(salesTable.createdAt);
-
-  const dailyTotals = new Map<string, { sales: number; profit: number }>();
-  const bestSellers = new Map<
-    number,
-    { productId: number; name: string; quantity: number; revenue: number }
-  >();
-  let lines: typeof saleItemsTable.$inferSelect[] = [];
-  if (matchingSales.length) {
-    lines = await db
-      .select()
-      .from(saleItemsTable)
-      .where(inArray(saleItemsTable.saleId, matchingSales.map((sale) => sale.id)));
-  }
-  for (const sale of matchingSales) {
-    const day = sale.createdAt.toISOString().slice(0, 10);
-    const current = dailyTotals.get(day) ?? { sales: 0, profit: 0 };
-    current.sales += sale.total;
-    current.profit += sale.profit;
-    dailyTotals.set(day, current);
-  }
-  for (const line of lines) {
-    const current = bestSellers.get(line.productId) ?? {
-      productId: line.productId,
-      name: line.productName,
-      quantity: 0,
-      revenue: 0,
-    };
-    current.quantity += line.quantity;
-    current.revenue += line.lineTotal;
-    bestSellers.set(line.productId, current);
-  }
-
-  const daily: Array<{ date: string; sales: number; profit: number }> = [];
-  const day = new Date(parsed.data.from);
-  const lastDay = new Date(parsed.data.to);
-  while (day <= lastDay) {
-    const date = day.toISOString().slice(0, 10);
-    const amounts = dailyTotals.get(date) ?? { sales: 0, profit: 0 };
-    daily.push({ date, ...amounts });
-    day.setUTCDate(day.getUTCDate() + 1);
-  }
-  res.json(
-    GetReportsResponse.parse({
-      totalSales: matchingSales.reduce((sum, sale) => sum + sale.total, 0),
-      estimatedProfit: matchingSales.reduce((sum, sale) => sum + sale.profit, 0),
-      salesCount: matchingSales.length,
-      daily,
-      bestSellers: [...bestSellers.values()]
-        .sort((a, b) => b.quantity - a.quantity)
-        .slice(0, 5),
     }),
   );
 });

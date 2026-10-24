@@ -457,25 +457,52 @@ export const GetDashboardResponse = zod.object({
 /**
  * @summary Get sales report for a date range
  */
+
+
+
 export const GetReportsQueryParams = zod.object({
+  "productId": zod.coerce.number().int().min(1).optional(),
   "from": zod.date(),
   "to": zod.date()
 })
 
 export const GetReportsResponse = zod.object({
   "totalSales": zod.number(),
-  "estimatedProfit": zod.number(),
+  "estimatedProfit": zod.number().nullable(),
+  "totalCost": zod.number().nullable(),
+  "missingCostLines": zod.number().int(),
+  "todaySales": zod.number(),
+  "monthSales": zod.number(),
+  "todayCount": zod.number().int(),
+  "monthCount": zod.number().int(),
+  "previousSales": zod.number(),
+  "previousFrom": zod.string(),
+  "previousTo": zod.string(),
+  "salesChangePercent": zod.number().nullable(),
+  "timeZone": zod.string(),
+  "products": zod.array(zod.object({
+  "productId": zod.number().int(),
+  "name": zod.string(),
+  "quantity": zod.number().int(),
+  "revenue": zod.number(),
+  "cost": zod.number().nullable(),
+  "profit": zod.number().nullable()
+})),
   "salesCount": zod.number().int(),
   "daily": zod.array(zod.object({
   "date": zod.coerce.date(),
   "sales": zod.number(),
-  "profit": zod.number()
+  "profit": zod.number().nullable(),
+  "cost": zod.number().nullable(),
+  "salesCount": zod.number().int()
 })),
   "bestSellers": zod.array(zod.object({
   "productId": zod.number().int(),
   "name": zod.string(),
   "quantity": zod.number().int(),
-  "revenue": zod.number()
+  "revenue": zod.number(),
+  "cost": zod.number().nullable(),
+  "profit": zod.number().nullable()
 }))
 })
 

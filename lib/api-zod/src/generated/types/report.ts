@@ -10,7 +10,22 @@ import type { DailyReport } from './dailyReport';
 
 export interface Report {
   totalSales: number;
-  estimatedProfit: number;
+  /** @nullable */
+  estimatedProfit: number | null;
+  /** @nullable */
+  totalCost: number | null;
+  missingCostLines: number;
+  todaySales: number;
+  monthSales: number;
+  todayCount: number;
+  monthCount: number;
+  previousSales: number;
+  previousFrom: string;
+  previousTo: string;
+  /** @nullable */
+  salesChangePercent: number | null;
+  timeZone: string;
+  products: BestSeller[];
   salesCount: number;
   daily: DailyReport[];
   bestSellers: BestSeller[];

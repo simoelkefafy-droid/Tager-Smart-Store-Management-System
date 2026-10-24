@@ -7,6 +7,10 @@
  */
 
 export type GetReportsParams = {
+/**
+ * @minimum 1
+ */
+productId?: number;
 from: Date;
 to: Date;
 };

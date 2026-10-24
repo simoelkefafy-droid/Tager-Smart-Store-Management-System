@@ -339,6 +339,9 @@ paths:
       summary: Get sales report for a date range
       parameters:
         - in: query
+          name: productId
+          schema: { type: integer, minimum: 1 }
+        - in: query
           name: from
           required: true
           schema:
@@ -532,25 +535,43 @@ components:
           items: { $ref: "#/components/schemas/Sale" }
     DailyReport:
       type: object
-      required: [date, sales, profit]
+      required: [date, sales, profit, cost, salesCount]
       properties:
         date: { type: string, format: date }
         sales: { type: number }
-        profit: { type: number }
+        profit: { type: ["number", "null"] }
+        cost: { type: ["number", "null"] }
+        salesCount: { type: integer }
     BestSeller:
       type: object
-      required: [productId, name, quantity, revenue]
+      required: [productId, name, quantity, revenue, cost, profit]
       properties:
         productId: { type: integer }
         name: { type: string }
         quantity: { type: integer }
         revenue: { type: number }
+        cost: { type: ["number", "null"] }
+        profit: { type: ["number", "null"] }
     Report:
       type: object
-      required: [totalSales, estimatedProfit, salesCount, daily, bestSellers]
+      required: [totalSales, estimatedProfit, salesCount, daily, bestSellers, totalCost, missingCostLines, todaySales, monthSales, todayCount, monthCount, previousSales, previousFrom, previousTo, salesChangePercent, products, timeZone]
       properties:
         totalSales: { type: number }
-        estimatedProfit: { type: number }
+        estimatedProfit: { type: ["number", "null"] }
+        totalCost: { type: ["number", "null"] }
+        missingCostLines: { type: integer }
+        todaySales: { type: number }
+        monthSales: { type: number }
+        todayCount: { type: integer }
+        monthCount: { type: integer }
+        previousSales: { type: number }
+        previousFrom: { type: string }
+        previousTo: { type: string }
+        salesChangePercent: { type: ["number", "null"] }
+        timeZone: { type: string }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/BestSeller" }
         salesCount: { type: integer }
         daily:
           type: array

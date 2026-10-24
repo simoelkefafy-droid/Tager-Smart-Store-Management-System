@@ -10,7 +10,11 @@ router.get("/reports", async (req, res): Promise<void> => {
   if (!validDay(from) || !validDay(to) || from > to) {
     res.status(400).json({ error: "أدخل فترة صحيحة؛ تاريخ البداية يجب ألا يتجاوز النهاية." }); return;
   }
-  const parsed = GetReportsQueryParams.safeParse(req.query);
+  const parsed = GetReportsQueryParams.safeParse({
+    ...req.query,
+    from: new Date(`${from}T00:00:00Z`),
+    to: new Date(`${to}T00:00:00Z`),
+  });
   if (!parsed.success) {
     res.status(400).json({ error: "معرّف المنتج أو الفترة غير صالح." }); return;
   }

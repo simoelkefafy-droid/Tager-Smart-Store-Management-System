@@ -4,8 +4,6 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@cler
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { arSA } from '@clerk/localizations';
 import { shadcn } from '@clerk/themes';
-import heroShop from '@/assets/images/hero-shop.webp';
-import inventoryImg from '@/assets/images/inventory.webp';
 import authImg from '@/assets/images/auth-storefront.webp';
 import emptyBox from '@/assets/images/empty-box.webp';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -30,6 +28,8 @@ import { Route, Switch, Router as WouterRouter, Link, Redirect, useLocation } fr
 import { InventoryMovementsPage } from '@/pages/inventory-movements';
 import { PurchasesPage } from '@/pages/purchases';
 import { ReportsPage } from '@/pages/reports';
+import { Landing } from '@/pages/landing';
+import { Overview } from '@/pages/overview';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -101,6 +101,19 @@ const navItems = [
   { href: '/reports', label: 'التقارير', mobileLabel: 'التقارير', icon: BarChart3 },
 ];
 
+const navGroups = [
+  { title: 'اليوم', items: ['/app', '/sales'] },
+  { title: 'البضاعة', items: ['/products', '/purchases', '/inventory-movements'] },
+  { title: 'الحسابات', items: ['/suppliers', '/reports'] },
+];
+
+function NavList({ location, onPick, prefix }: { location: string; onPick?: () => void; prefix: string }) {
+  return <nav className="space-y-6" aria-label="التنقل الرئيسي">{navGroups.map(g => <div key={g.title}>
+    <div className="mb-2 px-3 text-[11px] font-bold text-[#8a8466]">{g.title}</div>
+    <div className="space-y-1">{g.items.map(h => { const n = navItems.find(x => x.href === h)!; const Icon = n.icon; return <Link key={h} href={h} onClick={onPick} data-testid={`${prefix}${h.slice(1)}`} aria-current={location === h ? 'page' : undefined} className={`tg-navlink flex min-h-12 items-center gap-3 rounded-2xl px-2 text-sm font-semibold ${location === h ? 'is-active' : 'text-[#2c4337]'}`}><span className="tg-navicon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"><Icon size={18} strokeWidth={1.9} /></span><span>{n.label}</span></Link>; })}</div>
+  </div>)}</nav>;
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const client = useQueryClient();
@@ -111,40 +124,34 @@ function Shell({ children }: { children: ReactNode }) {
     await signOut({ redirectUrl: basePath || '/' });
     client.clear();
   };
-  return <div className="app-shell" dir="rtl">
-    <aside className="desktop-sidebar fixed right-0 top-0 z-30 flex h-full w-[252px] flex-col bg-[#172d45] px-4 py-6 text-white">
-      <Link href="/app" className="mb-9 flex items-center gap-3 px-2" data-testid="link-brand"><img src={`${basePath}/logo.svg`} className="h-10 w-10 rounded-2xl" alt="شعار تاجر" /><div><div className="text-xl font-bold">تاجر</div><div className="text-[11px] text-[#b7c7d0]">إدارة متجرك ببساطة</div></div></Link>
-      <div className="px-3 pb-3 text-[10px] font-bold tracking-[.16em] text-[#8fa3b2]">مساحة العمل</div>
-      <nav className="space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} data-testid={`nav-${href.slice(1)}`} className={`sidebar-link flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold ${location === href ? 'active' : 'text-[#d2dce1]'}`}><Icon size={18} strokeWidth={1.8} /><span>{label}</span></Link>)}
-      </nav>
-      <div className="mt-auto">
-        <div className="mb-4 rounded-2xl border border-white/10 bg-white/[.06] p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-bold"><CircleHelp size={16} className="text-[#a4d4b3]" />دفتر يومك</div>
-          <p className="m-0 text-xs leading-6 text-[#c0ccd3]">تابع كل حركة في متجرك من مكان واحد، بدون تعقيد.</p>
-        </div>
-        <button onClick={logOut} data-testid="button-logout" className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[#d2dce1] transition hover:bg-white/10"><LogOut size={17} />تسجيل الخروج</button>
-        <div className="mt-2 truncate px-3 text-[11px] text-[#93a6b3]">{user?.primaryEmailAddress?.emailAddress || 'حساب تاجر'}</div>
+  const current = navItems.find(n => n.href === location);
+  return <div className="app-shell tg-paper" dir="rtl">
+    <aside className="desktop-sidebar tg-rail fixed right-0 top-0 z-30 flex h-full w-[264px] flex-col overflow-y-auto px-4 py-6">
+      <Link href="/app" className="mb-8 flex items-center gap-3 px-2" data-testid="link-brand"><img src={`${basePath}/logo.svg`} width={40} height={40} className="h-10 w-10 rounded-2xl" alt="شعار تاجر" /><div><div className="tg-display text-xl font-bold text-[#17402d]">تاجر</div><div className="text-[11px] text-[#7b7a66]">دفتر محلك</div></div></Link>
+      <NavList location={location} prefix="nav-" />
+      <div className="mt-auto pt-6">
+        <div className="mb-3 flex items-center gap-3 rounded-2xl border border-[#e4e0d1] bg-[#f4f1e6] p-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#17402d] text-sm font-bold text-[#c9e265]">{user?.firstName?.slice(0, 1) || 'ت'}</div><div className="min-w-0"><div className="truncate text-xs font-bold text-[#14261d]">{user?.fullName || 'حساب المتجر'}</div><div className="truncate text-[11px] text-[#7b7a66]">{user?.primaryEmailAddress?.emailAddress || 'حساب تاجر'}</div></div></div>
+        <button onClick={logOut} data-testid="button-logout" className="flex min-h-11 w-full items-center gap-3 rounded-2xl px-3 text-sm font-semibold text-[#5a6b61] transition hover:bg-[#efeadb] hover:text-[#14261d]"><LogOut size={17} />تسجيل الخروج</button>
       </div>
     </aside>
-    {mobileOpen && <button aria-label="إغلاق القائمة" className="fixed inset-0 z-40 bg-[#14273d]/40 md:hidden" onClick={() => setMobileOpen(false)} />}
-    <aside className={`fixed right-0 top-0 z-50 flex h-full w-[270px] flex-col bg-[#172d45] px-4 py-6 text-white transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-      <div className="mb-7 flex items-center justify-between"><Link href="/app" className="flex items-center gap-3"><img src={`${basePath}/logo.svg`} className="h-9 w-9 rounded-lg" alt="شعار تاجر" /><b>تاجر</b></Link><button aria-label="إغلاق القائمة" className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-white/10" onClick={() => setMobileOpen(false)} data-testid="button-close-menu"><X size={20} /></button></div>
-      <nav className="space-y-1">{navItems.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-${href.slice(1)}`} className={`sidebar-link flex items-center gap-3 rounded-2xl px-3 py-3 text-sm ${location === href ? 'active' : 'text-[#d2dce1]'}`}><Icon size={18} />{label}</Link>)}</nav>
-      <button onClick={logOut} data-testid="button-mobile-logout" className="mt-auto flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[#d2dce1]"><LogOut size={17} />تسجيل الخروج</button>
+    {mobileOpen && <button aria-label="إغلاق القائمة" className="fixed inset-0 z-40 bg-[#14261d]/40 md:hidden" onClick={() => setMobileOpen(false)} />}
+    <aside className={`tg-rail fixed right-0 top-0 z-50 flex h-full w-[284px] flex-col overflow-y-auto px-4 py-6 transition-transform md:hidden ${mobileOpen ? 'translate-x-0' : 'translate-x-full'}`} aria-hidden={!mobileOpen}>
+      <div className="mb-7 flex items-center justify-between"><Link href="/app" onClick={() => setMobileOpen(false)} className="flex items-center gap-3"><img src={`${basePath}/logo.svg`} width={36} height={36} className="h-9 w-9 rounded-xl" alt="شعار تاجر" /><b className="tg-display text-lg text-[#17402d]">تاجر</b></Link><button aria-label="إغلاق القائمة" className="flex h-11 w-11 items-center justify-center rounded-xl text-[#2c4337] hover:bg-[#efeadb]" onClick={() => setMobileOpen(false)} data-testid="button-close-menu"><X size={20} /></button></div>
+      <NavList location={location} prefix="mobile-nav-" onPick={() => setMobileOpen(false)} />
+      <button onClick={logOut} data-testid="button-mobile-logout" className="mt-auto flex min-h-11 items-center gap-3 rounded-2xl px-3 text-sm font-semibold text-[#5a6b61]"><LogOut size={17} />تسجيل الخروج</button>
     </aside>
-    <div className="md:mr-[252px]">
-      <header className="sticky top-0 z-20 flex h-[68px] items-center justify-between border-b border-[#e7e8e4] bg-[#f6f5ef]/90 px-4 backdrop-blur md:px-8">
-        <div className="flex items-center gap-3"><button aria-label="فتح القائمة" className="flex h-11 w-11 items-center justify-center rounded-xl text-[#24364c] hover:bg-white md:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-menu"><Menu size={21} /></button><div><div className="text-xs text-[#5a6877]">مساحة عملك</div><div className="text-sm font-bold text-[#1d2d42]">{navItems.find(n => n.href === location)?.label || 'تاجر'}</div></div></div>
-        <div className="flex items-center gap-3">
-          <div className="hidden text-left sm:block"><div className="text-xs font-bold">{user?.fullName || 'أهلاً بك'}</div><div className="text-[10px] text-[#5a6877]">حساب المتجر</div></div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dceae0] text-sm font-bold text-[#1f5a3f]">{user?.firstName?.slice(0, 1) || 'ت'}</div>
+    <div className="md:mr-[264px]">
+      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-3 border-b border-[#e4e0d1] bg-[#f4f1e6]/90 px-4 backdrop-blur md:px-8">
+        <div className="flex min-w-0 items-center gap-3"><button aria-label="فتح القائمة" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#17402d] hover:bg-[#efeadb] md:hidden" onClick={() => setMobileOpen(true)} data-testid="button-open-menu"><Menu size={21} /></button><div className="min-w-0"><div className="text-[11px] font-semibold text-[#7b7a66]">تاجر /</div><div className="tg-display truncate text-lg font-bold text-[#14261d]">{current?.label || 'تاجر'}</div></div></div>
+        <div className="flex items-center gap-2">
+          {location !== '/sales' && <Link href="/sales" className="hidden min-h-11 items-center gap-2 rounded-full bg-[#17402d] px-4 text-sm font-bold text-[#f4f1e6] hover:bg-[#0f2f20] sm:inline-flex" data-testid="link-header-new-sale"><Plus size={16} />بيع جديد</Link>}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#17402d] text-sm font-bold text-[#c9e265] md:hidden" aria-hidden>{user?.firstName?.slice(0, 1) || 'ت'}</div>
         </div>
       </header>
-      <main className="mobile-content mx-auto w-full max-w-[1500px] px-4 py-6 md:px-8 md:py-8">{children}</main>
+      <main className="mobile-content mx-auto w-full max-w-[1440px] px-4 py-6 md:px-8 md:py-8">{children}</main>
     </div>
-    <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-[#e1e4df] bg-[#fffefa]/95 px-0.5 shadow-[0_-6px_20px_rgba(23,45,69,.06)] pb-[max(env(safe-area-inset-bottom),8px)] pt-2 backdrop-blur md:hidden">
-      {navItems.map(({ href, mobileLabel, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex flex-col items-center gap-1 py-1 text-[8.5px] min-w-0 ${location === href ? 'font-bold text-[#1f5a3f]' : 'text-[#5a6877]'}`}><Icon size={18} strokeWidth={location === href ? 2.2 : 1.8} /><span className="max-w-full truncate">{mobileLabel}</span></Link>)}
+    <nav className="fixed inset-x-2 bottom-2 z-30 grid grid-cols-7 rounded-[22px] border border-[#e4e0d1] bg-[#fbf9f2]/95 px-1 pb-[max(env(safe-area-inset-bottom),6px)] pt-1.5 shadow-[0_10px_30px_rgba(20,38,29,.14)] backdrop-blur md:hidden" aria-label="تنقل سريع">
+      {navItems.map(({ href, mobileLabel, icon: Icon }) => <Link key={href} href={href} data-testid={`bottom-nav-${href.slice(1)}`} className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl text-[9px] ${location === href ? 'bg-[#17402d] font-bold text-[#f4f1e6]' : 'text-[#5a6b61]'}`}><Icon size={18} strokeWidth={location === href ? 2.2 : 1.8} /><span className="max-w-full truncate">{mobileLabel}</span></Link>)}
     </nav>
   </div>;
 }
@@ -179,32 +186,6 @@ function SelectField({ label, children, ...props }: SelectHTMLAttributes<HTMLSel
 }
 function getErrorMessage(error: unknown) { return error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ البيانات'; }
 function useApiOptions() { return {}; }
-
-function Overview() {
-  const api = useApiOptions();
-  const dashboard = useGetDashboard(api);
-  const data = dashboard.data;
-  if (dashboard.isLoading) return <LoadingBlock />;
-  if (dashboard.isError || !data) return <ErrorBlock retry={() => dashboard.refetch()} />;
-  const recent = data.recentSales || [];
-  return <div className="fade-up">
-    <PageTitle title="نظرة عامة" subtitle="صباح الخير، إليك ملخص حركة متجرك اليوم." action={<Link href="/sales" className="inline-flex min-h-11 items-center gap-2 rounded-2xl bg-[#25694a] px-4 text-sm font-bold text-white hover:bg-[#1f4d38]" data-testid="button-new-sale"><Plus size={16} />تسجيل عملية بيع</Link>} />
-    <div className="mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard icon={Wallet} label="إجمالي المبيعات" value={<EGP amount={data.totalSales} />} note="إجمالي قيمة المبيعات المسجلة" accent="bg-[#e8f2ec] text-[#1f5a3f]" />
-      <StatCard icon={Activity} label="الربح التقديري" value={<EGP amount={data.totalProfit} />} note="قبل المصروفات التشغيلية والضرائب، بتكلفة المنتج وقت البيع" accent="bg-[#eaf0f6] text-[#385a7c]" />
-      <StatCard icon={Package} label="المنتجات" value={Number(data.productsCount || 0).toLocaleString('ar-EG')} note="أصناف مسجلة في المخزون" accent="bg-[#f3eee4] text-[#927442]" />
-      <StatCard icon={AlertTriangle} label="مخزون منخفض" value={Number(data.lowStockCount || 0).toLocaleString('ar-EG')} note="منتجات تحتاج إلى متابعة" accent="bg-[#fff0ed] text-[#8d2f29]" />
-    </div>
-    <div className="grid gap-5 xl:grid-cols-[1.4fr_.8fr]">
-      <section className="panel overflow-hidden"><div className="flex items-center justify-between border-b border-[#edf0eb] bg-[#fbfbf8] px-5 py-4"><div><h2 className="m-0 text-base font-bold text-[#1d2d42]">أحدث المبيعات</h2><p className="mb-0 mt-1 text-xs text-[#5a6877]">آخر العمليات المسجلة في متجرك</p></div><Link href="/sales" className="text-xs font-bold text-[#1f5a3f] hover:underline" data-testid="link-all-sales">كل المبيعات</Link></div>
-        {recent.length ? <SalesTable sales={recent.slice(0, 6)} /> : <EmptyState title="لا توجد مبيعات بعد" body="سجّل أول عملية بيع لتبدأ متابعة حركة متجرك." action={<Link href="/sales" className="text-sm font-bold text-[#1f5a3f]" data-testid="link-start-sale">ابدأ بتسجيل بيع</Link>} />}
-      </section>
-      <section className="panel overflow-hidden"><div className="flex items-center justify-between border-b border-[#edf0eb] bg-[#fbfbf8] px-5 py-4"><div><h2 className="m-0 text-base font-bold text-[#1d2d42]">تنبيه المخزون</h2><p className="mb-0 mt-1 text-xs text-[#5a6877]">أصناف وصلت إلى حد إعادة الطلب</p></div><span className="rounded-full bg-[#fff1ed] px-2.5 py-1 text-xs font-bold text-[#aa4c43]">{(data.lowStockProducts || []).length} أصناف</span></div>
-        {(data.lowStockProducts || []).length ? <div className="divide-y divide-[#edf0eb]">{data.lowStockProducts.slice(0, 6).map(p => <div key={p.id} className="flex items-center justify-between gap-3 px-5 py-4" data-testid={`row-low-stock-${p.id}`}><div className="min-w-0"><div className="truncate text-sm font-bold">{p.name}</div><div className="mt-1 text-xs text-[#5a6877]">{p.category}</div></div><div className="text-left"><div className="text-sm font-bold text-[#8d2f29]">{p.quantity} قطعة</div><div className="text-[10px] text-[#5a6877]">الحد الأدنى {p.minStock}</div></div></div>)}</div> : <EmptyState title="المخزون مستقر" body="كل المنتجات أعلى من الحد الأدنى المحدد." />}
-      </section>
-    </div>
-  </div>;
-}
 
 function SalesTable({ sales }: { sales: Sale[] }) {
   return <div className="overflow-x-auto"><table className="responsive-table w-full text-right text-sm"><thead className="bg-[#f8f9f6] text-[11px] font-semibold text-[#5a6877]"><tr><th className="px-5 py-3">رقم العملية</th><th className="px-4 py-3">المنتجات</th><th className="px-4 py-3">التاريخ</th><th className="px-5 py-3">الإجمالي</th></tr></thead><tbody className="divide-y divide-[#edf0eb]">{sales.map(s => <tr key={s.id} data-testid={`row-sale-${s.id}`} className="hover:bg-[#fbfcf9]"><td data-label="رقم العملية" className="px-5 py-4 font-bold">#{s.id}</td><td data-label="المنتجات" className="px-4 py-4 text-[#627080]">{s.items?.length || 0} أصناف</td><td data-label="التاريخ" className="px-4 py-4 text-[#627080]">{new Date(s.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td data-label="الإجمالي" className="px-5 py-4 font-bold"><EGP amount={s.total} /></td></tr>)}</tbody></table></div>;
@@ -314,22 +295,6 @@ function SupplierPage() {
     {filtered.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((s, index) => <article key={s.id} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-md" data-testid={`card-supplier-${s.id}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-2xl font-bold ${['bg-[#eaf2ed] text-[#1f5a3f]', 'bg-[#edf1f6] text-[#426181]', 'bg-[#f5efe4] text-[#9b7842]'][index % 3]}`}><Users size={19} /></div><div><h2 className="m-0 text-base font-bold">{s.name}</h2><div className="mt-1 text-xs text-[#5a6877]">مورد رقم {s.id}</div></div></div><div className="flex"><button onClick={() => { setForm(s); setError(''); }} data-testid={`button-edit-supplier-${s.id}`} aria-label="تعديل المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#4d5f72] hover:bg-[#edf3ef]"><Pencil size={15} /></button><button onClick={() => deleteItem(s)} data-testid={`button-delete-supplier-${s.id}`} aria-label="حذف المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#5a6877] hover:bg-[#fff0ed] hover:text-[#8d2f29]"><Trash2 size={15} /></button></div></div><div className="mt-5 grid gap-3 border-t border-[#edf0eb] pt-4"><div className="flex items-center gap-2 text-sm text-[#617080]"><span className="text-xs font-semibold text-[#5a6877]">الهاتف</span><span dir="ltr">{s.phone || '—'}</span></div><div><div className="mb-2 text-xs font-semibold text-[#5a6877]">الأصناف التي يوفرها</div><div className="rounded-lg bg-[#f8f9f6] px-3 py-2 text-sm text-[#425163]">{s.products || 'لم تُحدد أصناف بعد'}</div></div></div></article>)}</div> : <div className="panel"><EmptyState title={search ? 'لا توجد نتائج مطابقة' : 'سجّل موردي متجرك'} body={search ? 'جرّب البحث باسم أو رقم هاتف مختلف.' : 'احتفظ ببيانات التواصل والأصناف التي يوفرها كل مورد.'} action={!search ? <Button testId="button-empty-add-supplier" onClick={() => setForm(null)}><Plus size={15} />إضافة مورد</Button> : undefined} /></div>}
     {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fff1ef] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</div>}
     {form !== false && <Dialog title={form ? 'تعديل بيانات المورد' : 'إضافة مورد جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4"><Field label="اسم المورد" name="name" required defaultValue={form?.name || ''} data-testid="input-supplier-name" /><Field label="رقم الهاتف" name="phone" type="tel" defaultValue={form?.phone || ''} data-testid="input-supplier-phone" /><Field label="الأصناف التي يوفرها" name="products" required defaultValue={form?.products || ''} placeholder="مثال: مشروبات، وجبات خفيفة" data-testid="input-supplier-products" />{error && <p className="m-0 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</p>}<div className="flex gap-2"><Button type="submit" testId="button-save-supplier" disabled={create.isPending || update.isPending}>{create.isPending || update.isPending ? 'جارٍ الحفظ...' : 'حفظ المورد'}</Button><Button secondary testId="button-cancel-supplier" onClick={() => setForm(false)}>إلغاء</Button></div></form></Dialog>}
-  </div>;
-}
-
-function Landing() {
-  return <div dir="rtl" className="min-h-[100dvh] overflow-hidden bg-[#f7f6f1] text-[#1d2d42]">
-    <header className="mx-auto flex max-w-7xl items-center justify-between px-5 py-5 md:px-10"><Link href="/" className="flex items-center gap-3" data-testid="link-home-brand"><img src={`${basePath}/logo.svg`} className="h-11 w-11 rounded-2xl" alt="شعار تاجر" /><div><b className="block text-xl">تاجر</b><span className="text-[10px] text-[#5a6877]">رفيق شغلك كل يوم</span></div></Link><div className="flex items-center gap-2"><Link href="/sign-in" className="rounded-2xl px-4 py-2.5 text-sm font-bold text-[#344357] hover:bg-white" data-testid="link-sign-in">تسجيل الدخول</Link><Link href="/sign-up" className="hidden rounded-2xl bg-[#25694a] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#1f4d38] sm:inline-flex" data-testid="link-sign-up">إنشاء حساب</Link></div></header>
-    <main>
-      <section className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-16 pt-10 md:grid-cols-[1.03fr_.97fr] md:px-10 md:pb-24 md:pt-16">
-        <div className="fade-up"><div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#d8e5dc] bg-[#edf4ef] px-3 py-1.5 text-xs font-bold text-[#1f5a3f]"><span className="h-2 w-2 rounded-full bg-[#43835e]" />إدارة أسهل لمتجرك الصغير</div><h1 className="m-0 max-w-[630px] text-[42px] font-bold leading-[1.35] tracking-tight md:text-[60px]">كل تفاصيل متجرك،<br /><span className="text-[#347454]">في متناول يدك.</span></h1><p className="mt-5 max-w-[510px] text-base leading-8 text-[#697785] md:text-lg">تاجر يجمع المخزون والمبيعات والموردين في مساحة واحدة واضحة. حتى تعرف ماذا تبيع، وماذا تحتاج، وكيف يمشي يومك.</p><div className="mt-8 flex flex-wrap gap-3"><Link href="/sign-up" data-testid="button-create-account" className="inline-flex h-12 items-center gap-2 rounded-2xl bg-[#25694a] px-5 text-sm font-bold text-white shadow-[0_8px_20px_rgba(40,98,71,.16)] transition hover:-translate-y-0.5 hover:bg-[#1f4d38]"><Store size={17} />ابدأ بحسابك<ArrowLeft size={15} /></Link><Link href="/sign-in" className="inline-flex h-12 items-center rounded-2xl border border-[#d9dfd9] bg-white px-5 text-sm font-bold text-[#344357] hover:border-[#a9bdb0]" data-testid="button-hero-sign-in">لديّ حساب</Link></div><div className="mt-7 flex items-center gap-3 text-xs text-[#5a6877]"><span className="flex -space-x-2 space-x-reverse">{['م', 'س', 'ع'].map((c, i) => <span key={c} className={`flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#f7f6f1] text-xs font-bold ${['bg-[#dbe9df] text-[#1f5a3f]', 'bg-[#e7eaf0] text-[#405e7e]', 'bg-[#f1e8d9] text-[#8f7145]'][i]}`}>{c}</span>)}</span><span>مصمم لليوم الحقيقي في المتجر</span></div></div>
-        <div className="relative mx-auto w-full max-w-[560px]"><img src={heroShop} width={1024} height={1024} alt="طاولة محل صغير بها أدوات البيع اليومية" className="aspect-[4/4.2] w-full rounded-[28px] object-cover shadow-[0_22px_60px_rgba(34,52,68,.15)]" /></div>
-      </section>
-      <section className="border-y border-[#e8e9e4] bg-[#fffefa] py-14"><div className="mx-auto max-w-7xl px-5 md:px-10"><div className="mb-8 max-w-xl"><div className="text-xs font-bold text-[#347454]">أدوات يومك في مكان واحد</div><h2 className="mt-2 text-2xl font-bold md:text-3xl">إدارة بسيطة، بدون تفاصيل تضيع وقتك.</h2></div><div className="grid gap-4 md:grid-cols-3">{[{ icon: Package, title: 'مخزون واضح', text: 'اعرف الكمية المتاحة وما يقترب من حد إعادة الطلب قبل أن يفوتك.' }, { icon: ShoppingCart, title: 'مبيعات مرتبة', text: 'سجّل عملية البيع في لحظتها ودع تاجر يحدّث الكميات نيابةً عنك.' }, { icon: FileBarChart2, title: 'قراءة سريعة للأداء', text: 'تابع الإيرادات والأرباح والمنتجات الأكثر حركة خلال أي فترة.' }].map(({ icon: Icon, title, text }) => <article key={title} className="rounded-2xl border border-[#e8ebe6] bg-[#fffefa] p-5"><span className="inline-flex rounded-2xl bg-[#eaf4ed] p-3 text-[#1f5a3f]"><Icon size={19} /></span><h3 className="mb-2 mt-4 text-base font-bold">{title}</h3><p className="m-0 text-sm leading-7 text-[#5a6877]">{text}</p></article>)}</div></div></section>
-      <section className="mx-auto grid max-w-7xl items-center gap-8 px-5 py-14 md:grid-cols-2 md:px-10 md:py-20"><div><div className="text-xs font-bold text-[#347454]">معلومة وقت ما تحتاجها</div><h2 className="mt-2 text-2xl font-bold md:text-3xl">القرار الأفضل يبدأ بصورة أوضح.</h2><p className="mt-3 max-w-lg text-sm leading-7 text-[#5a6877]">بدلاً من أوراق متفرقة وحسابات ذهنية، شاهد مبيعاتك ومخزونك في لوحة واحدة، وارجع لتقارير بسيطة تساعدك تخطط لطلبك القادم.</p><Link href="/sign-up" data-testid="link-signup-secondary" className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-[#cbd8ce] bg-white px-4 py-3 text-sm font-bold text-[#1f5a3f] hover:bg-[#edf4ef]">أنشئ حساب متجرك<ArrowLeft size={15} /></Link></div><div className="overflow-hidden rounded-[24px] bg-[#eaf0e9]"><img src={inventoryImg} width={1024} height={768} alt="أصناف مرتبة على سطح عمل لجرد المخزون" loading="lazy" className="aspect-[4/3] w-full object-cover" /></div><div className="hidden rounded-[24px] bg-[#eaf0e9] p-6 md:p-8"><div className="rounded-2xl bg-[#fffefa] p-5 shadow-sm"><div className="flex items-center justify-between"><b className="text-sm">أكثر المنتجات مبيعاً</b><span className="text-[10px] text-[#5a6877]">لأي فترة تختارها</span></div>{[['رتّب أصنافك حسب الكمية المباعة', 'من مبيعاتك'], ['اعرف إيراد كل صنف', 'بالجنيه'], ['صدّر التقرير لملف CSV', 'للمحاسب']].map(([label, hint]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs"><span>{label}</span><span className="text-[#5a6877]">{hint}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#edf0eb]" /></div>)}</div></div></section>
-      <section className="mx-5 mb-14 rounded-[26px] bg-[#18334b] px-6 py-10 text-center text-white md:mx-auto md:mb-20 md:max-w-7xl md:px-10 md:py-14"><div className="mx-auto max-w-xl"><div className="text-xs font-bold text-[#b9d9c2]">ابدأ من هنا</div><h2 className="mb-3 mt-2 text-2xl font-bold md:text-3xl">ابدأ دفتر متجرك الحقيقي.</h2><p className="mb-6 text-sm leading-7 text-[#c3d0d7]">أنشئ حسابك، أضف منتجاتك وأرصدتها الافتتاحية، وكل عملية بعدها تُسجَّل باسم متجرك وحده.</p><Link href="/sign-up" data-testid="link-signup-bottom" className="inline-flex items-center gap-2 rounded-2xl bg-[#79ac89] px-5 py-3 text-sm font-bold text-[#14334a] transition hover:bg-[#94c2a1]">إنشاء حساب<ArrowLeft size={15} /></Link></div></section>
-    </main>
-    <footer className="border-t border-[#e5e8e2] px-5 py-6 text-center text-xs text-[#5a6877]">تاجر — مساحة أوضح لإدارة كل يوم في متجرك</footer>
   </div>;
 }
 

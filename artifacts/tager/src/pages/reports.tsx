@@ -20,7 +20,7 @@ function validate(from: string, to: string): string {
   return '';
 }
 const fmtNum = (n: number) => n.toLocaleString('ar-EG', { maximumFractionDigits: 2 });
-const fmtDate = (s: string, long = false) => new Date(`${s}T12:00:00Z`).toLocaleDateString('ar-EG', { timeZone: 'UTC', day: 'numeric', month: long ? 'long' : 'short', ...(long ? { year: 'numeric' } : {}) });
+const fmtDate = (s: string, long = false) => new Date(`${s.slice(0, 10)}T12:00:00Z`).toLocaleDateString('ar-EG', { timeZone: 'UTC', day: 'numeric', month: long ? 'long' : 'short', ...(long ? { year: 'numeric' } : {}) });
 
 function Money({ amount }: { amount: number | null | undefined }) {
   if (amount === null || amount === undefined) return <span className="text-[#8d2f29]" title="التكلفة غير متاحة لبعض البنود">غير متاح</span>;

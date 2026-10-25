@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 @layer theme, base, clerk, components, utilities;
 @import 'tailwindcss';
 @import '@clerk/themes/shadcn.css';
@@ -101,7 +101,7 @@
 .fade-up { animation: appear .45s ease both; }
 @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .cl-formFieldInput::placeholder { color: #89939e; opacity: 1; }
-@media (max-width: 767px) { .desktop-sidebar { display: none; } .mobile-content { padding-bottom: 92px; } }
+@media (max-width: 767px) { .desktop-sidebar { display: none; } .mobile-content { padding-bottom: 104px; } }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 @media (max-width: 767px) {
@@ -111,3 +111,26 @@
   .responsive-table td { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0 !important; text-align: left; }
   .responsive-table td::before { content: attr(data-label); font-size: 12px; font-weight: 600; color: #5a6877; text-align: right; }
 }
+
+/* ---------- Tager redesign: shell, landing, overview (scoped) ---------- */
+.tg-display { font-family: 'Readex Pro', 'IBM Plex Sans Arabic', sans-serif; }
+.tg-num { font-family: 'Manrope', sans-serif; font-feature-settings: 'tnum'; }
+.tg-paper { background-color: #f4f1e6; background-image: radial-gradient(rgba(23,64,45,.07) 1px, transparent 1px); background-size: 22px 22px; }
+.tg-rail { background: #fbf9f2; border-left: 1px solid #e4e0d1; }
+.tg-navlink { position: relative; transition: background .2s ease, color .2s ease; }
+.tg-navlink:hover { background: #efeadb; color: #17402d; }
+.tg-navlink.is-active { background: #17402d; color: #f4f1e6; }
+.tg-navlink.is-active .tg-navicon { background: #c9e265; color: #17402d; }
+.tg-navicon { transition: background .2s ease; }
+.tg-ledger-row { transition: background .18s ease; }
+.tg-ledger-row:hover { background: #f7f3e7; }
+.tg-card { background: #fffdf6; border: 1px solid #e4e0d1; border-radius: 28px; }
+.tg-rise { animation: tgRise .6s cubic-bezier(.2,.7,.2,1) both; }
+.tg-rise-2 { animation-delay: .08s; } .tg-rise-3 { animation-delay: .16s; } .tg-rise-4 { animation-delay: .24s; }
+@keyframes tgRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.tg-marquee { animation: tgMarquee 38s linear infinite; }
+@keyframes tgMarquee { from { transform: translateX(0); } to { transform: translateX(50%); } }
+.tg-hero-img { animation: tgZoom 1.4s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes tgZoom { from { opacity: 0; transform: scale(1.06); } to { opacity: 1; transform: scale(1); } }
+.tg-seg[aria-pressed='true'] { background: #17402d; color: #f4f1e6; }
+@media (prefers-reduced-motion: reduce) { .tg-marquee { animation: none; } }

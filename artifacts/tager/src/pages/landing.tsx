@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { ArrowLeft, BarChart3, Boxes, ClipboardList, PackageCheck, ReceiptText, ShoppingCart, Truck } from 'lucide-react';
-import heroShop from '@/assets/images/hero-shop.webp';
+import heroWide from '@/assets/images/hero-original-wide.webp';
+import heroMobile from '@/assets/images/hero-original-mobile.webp';
 import inventoryImg from '@/assets/images/inventory.webp';
 import storefront from '@/assets/images/auth-storefront.webp';
 
@@ -30,18 +31,18 @@ export function Landing() {
       {/* Hero: centered editorial headline over a cinematic shop band */}
       <section className="relative px-5 pt-6 text-center md:px-10 md:pt-12">
         <div className="tg-rise mx-auto inline-flex items-center gap-2 rounded-full border border-[#d6d0bb] bg-[#fbf9f2] px-4 py-2 text-xs font-bold text-[#2f5a43]"><span className="h-2 w-2 rounded-full bg-[#7fae3a]" />دفتر المحل، بس أوضح</div>
-        <h1 className="tg-display tg-rise tg-rise-2 mx-auto mt-6 max-w-[1050px] text-[44px] font-bold leading-[1.18] tracking-tight sm:text-[64px] lg:text-[92px]">
+        <h1 className="tg-display tg-rise tg-rise-2 mx-auto mt-6 max-w-[1050px] text-[38px] font-bold leading-[1.25] tracking-tight sm:text-[64px] lg:text-[92px]">
           اعرف إيه اللي <span className="relative inline-block text-[#1f6b45]">على الرف<svg aria-hidden className="absolute -bottom-2 right-0 h-3 w-full" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M2 9 C 50 2, 150 2, 198 8" stroke="#c9e265" strokeWidth="6" fill="none" strokeLinecap="round" /></svg></span><br className="hidden sm:block" /> وإيه اللي في الدرج.
         </h1>
-        <p className="tg-rise tg-rise-3 mx-auto mt-7 max-w-[620px] text-base leading-8 text-[#4f6157] md:text-lg">تاجر مساحة عمل عربية لصاحب محل الحي: مخزون حقيقي، مبيعات تُخصم فوراً، مشتريات من الموردين، وتقارير ربح إجمالي بتوقيت القاهرة.</p>
-        <div className="tg-rise tg-rise-4 mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link href="/sign-up" className="inline-flex min-h-[52px] items-center gap-2 rounded-full bg-[#17402d] px-7 text-base font-bold text-[#f4f1e6] shadow-[0_10px_30px_rgba(23,64,45,.25)] hover:bg-[#0f2f20]" data-testid="button-create-account">افتح دفتر محلك<ArrowLeft size={18} /></Link>
-          <Link href="/sign-in" className="inline-flex min-h-[52px] items-center rounded-full border border-[#cfc8b1] bg-[#fbf9f2] px-7 text-base font-bold text-[#17402d] hover:bg-white" data-testid="button-hero-sign-in">عندي حساب</Link>
+        <p className="tg-rise tg-rise-3 mx-auto mt-5 max-w-[620px] lg:mt-9 text-[15px] leading-8 text-[#4f6157] md:text-lg">تاجر مساحة عمل عربية لصاحب محل الحي: مخزون حقيقي، مبيعات تُخصم فوراً، مشتريات من الموردين، وتقارير ربح إجمالي بتوقيت القاهرة.</p>
+        <div className="tg-rise tg-rise-4 mx-auto mt-7 flex max-w-[420px] flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row sm:items-center">
+          <Link href="/sign-up" className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-[#17402d] px-7 text-base font-bold text-[#f4f1e6] shadow-[0_10px_30px_rgba(23,64,45,.25)] hover:bg-[#0f2f20]" data-testid="button-create-account">افتح دفتر محلك<ArrowLeft size={18} /></Link>
+          <Link href="/sign-in" className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-[#cfc8b1] bg-[#fbf9f2] px-7 text-base font-bold text-[#17402d] hover:bg-white" data-testid="button-hero-sign-in">عندي حساب</Link>
         </div>
 
-        <div className="relative mx-auto mt-14 max-w-[1320px]">
+        <div className="relative mx-auto mt-10 max-w-[1320px] md:mt-14">
           <div className="overflow-hidden rounded-[36px] border border-[#d6d0bb] md:rounded-[48px]">
-            <img src={heroShop} width={1024} height={1024} fetchPriority="high" alt="طاولة محل صغير في الحي عليها أدوات البيع اليومية" className="tg-hero-img h-[300px] w-full object-cover object-center sm:h-[420px] lg:h-[520px]" />
+            <picture><source media="(max-width: 640px)" srcSet={heroMobile} width={600} height={679} /><img src={heroWide} width={1024} height={679} fetchPriority="high" loading="eager" decoding="async" alt="طاولة بيع في محل صغير بالحي، عليها جهاز لوحي وأدوات البيع اليومية" className="tg-hero-img aspect-[600/679] w-full object-cover object-center sm:aspect-auto sm:h-[420px] lg:h-[520px]" /></picture>
           </div>
           {/* floating feature tickets, describe real features only */}
           <div className="absolute -bottom-8 right-4 hidden w-[290px] rotate-[-2deg] rounded-[22px] border border-[#d6d0bb] bg-[#fbf9f2] p-5 text-right shadow-[0_20px_50px_rgba(20,38,29,.18)] md:block lg:right-12">

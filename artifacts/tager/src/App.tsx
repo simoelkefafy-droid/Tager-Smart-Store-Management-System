@@ -30,6 +30,8 @@ import { PurchasesPage } from '@/pages/purchases';
 import { ReportsPage } from '@/pages/reports';
 import { Landing } from '@/pages/landing';
 import { Overview } from '@/pages/overview';
+import { ProductPage } from '@/pages/products';
+import { PageTitle, Button, LoadingBlock, ErrorBlock, EmptyState, EGP, StatCard, Dialog, Field, SelectField, getErrorMessage, useApiOptions } from '@/components/app/ui';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -49,25 +51,25 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: '#286247', colorForeground: '#1d2d42', colorMutedForeground: '#687789',
-    colorDanger: '#bd4540', colorBackground: '#fffefa', colorInput: '#fffefa',
-    colorInputForeground: '#1d2d42', colorNeutral: '#dce1df',
+    colorPrimary: '#17402d', colorForeground: '#14261d', colorMutedForeground: '#687789',
+    colorDanger: '#bd4540', colorBackground: '#fffdf6', colorInput: '#fffdf6',
+    colorInputForeground: '#14261d', colorNeutral: '#dce1df',
     fontFamily: "'IBM Plex Sans Arabic', sans-serif", borderRadius: '0.75rem',
   },
   elements: {
     rootBox: 'w-full flex justify-center',
-    cardBox: 'bg-[#fffefa] rounded-2xl w-[440px] max-w-full overflow-hidden border border-[#e1e5df]',
+    cardBox: 'bg-[#fffdf6] rounded-2xl w-[440px] max-w-full overflow-hidden border border-[#e1e5df]',
     card: '!shadow-none !border-0 !bg-transparent !rounded-none',
     footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
-    headerTitle: 'text-[#1d2d42] font-bold', headerSubtitle: 'text-[#687789]',
-    socialButtonsBlockButtonText: 'text-[#1d2d42]', formFieldLabel: 'text-[#26374b]',
-    footerActionLink: 'text-[#1f5a3f]', footerActionText: 'text-[#687789]',
-    dividerText: 'text-[#687789]', identityPreviewEditButton: 'text-[#1f5a3f]',
-    formFieldSuccessText: 'text-[#1f5a3f]', alertText: 'text-[#8d3734]',
+    headerTitle: 'text-[#14261d] font-bold', headerSubtitle: 'text-[#687789]',
+    socialButtonsBlockButtonText: 'text-[#14261d]', formFieldLabel: 'text-[#26374b]',
+    footerActionLink: 'text-[#1f6b45]', footerActionText: 'text-[#687789]',
+    dividerText: 'text-[#687789]', identityPreviewEditButton: 'text-[#1f6b45]',
+    formFieldSuccessText: 'text-[#1f6b45]', alertText: 'text-[#8d3734]',
     logoBox: 'mb-3', logoImage: 'max-h-10', socialButtonsBlockButton: 'border-[#dce1df]',
-    formButtonPrimary: 'bg-[#25694a] hover:bg-[#1f4d38] !text-white', formFieldInput: 'border-[#dce1df]',
-    footerAction: 'border-t border-[#e7e8e4]', dividerLine: 'bg-[#dce1df]',
-    alert: 'border-[#efceca] bg-[#fff5f3]', otpCodeFieldInput: 'border-[#dce1df]',
+    formButtonPrimary: 'bg-[#17402d] hover:bg-[#0f2f20] !text-white', formFieldInput: 'border-[#dce1df]',
+    footerAction: 'border-t border-[#e4e0d1]', dividerLine: 'bg-[#dce1df]',
+    alert: 'border-[#efceca] bg-[#fbe9e4]', otpCodeFieldInput: 'border-[#dce1df]',
     formFieldRow: 'mb-4', main: 'gap-5',
   },
 };
@@ -85,10 +87,10 @@ function CacheUserWatcher() {
 }
 
 function SignInPage() {
-  return <div className="grid min-h-[100dvh] bg-[#f6f5ef] lg:grid-cols-[1fr_1.05fr]" dir="rtl"><div className="flex items-center justify-center px-4 py-10"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div><div className="relative hidden lg:block"><img src={authImg} width={1024} height={1280} alt="واجهة متجر صغير في حي سكني" className="absolute inset-0 h-full w-full object-cover" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-[#172d45]/85 via-[#172d45]/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-12 text-white"><div className="text-3xl font-bold leading-snug">أهلاً بعودتك إلى متجرك</div><p className="mt-3 max-w-sm text-sm leading-7 text-white/80">مخزونك ومبيعاتك وموردوك في مكان واحد واضح.</p></div></div></div>;
+  return <div className="grid min-h-[100dvh] grid-cols-1 bg-[#f6f5ef] lg:grid-cols-[1fr_1.05fr]" dir="rtl"><div className="flex min-w-0 items-center justify-center px-4 py-10"><SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div><div className="relative hidden lg:block"><img src={authImg} width={1024} height={1280} alt="واجهة متجر صغير في حي سكني" className="absolute inset-0 h-full w-full object-cover" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-[#172d45]/85 via-[#172d45]/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-12 text-white"><div className="text-3xl font-bold leading-snug">أهلاً بعودتك إلى متجرك</div><p className="mt-3 max-w-sm text-sm leading-7 text-white/80">مخزونك ومبيعاتك وموردوك في مكان واحد واضح.</p></div></div></div>;
 }
 function SignUpPage() {
-  return <div className="grid min-h-[100dvh] bg-[#f6f5ef] lg:grid-cols-[1fr_1.05fr]" dir="rtl"><div className="flex items-center justify-center px-4 py-10"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div><div className="relative hidden lg:block"><img src={authImg} width={1024} height={1280} alt="واجهة متجر صغير في حي سكني" className="absolute inset-0 h-full w-full object-cover" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-[#172d45]/85 via-[#172d45]/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-12 text-white"><div className="text-3xl font-bold leading-snug">ابدأ دفتر متجرك اليوم</div><p className="mt-3 max-w-sm text-sm leading-7 text-white/80">مخزونك ومبيعاتك وموردوك في مكان واحد واضح.</p></div></div></div>;
+  return <div className="grid min-h-[100dvh] grid-cols-1 bg-[#f6f5ef] lg:grid-cols-[1fr_1.05fr]" dir="rtl"><div className="flex min-w-0 items-center justify-center px-4 py-10"><SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} fallbackRedirectUrl={`${basePath}/app`} forceRedirectUrl={`${basePath}/app`} /></div><div className="relative hidden lg:block"><img src={authImg} width={1024} height={1280} alt="واجهة متجر صغير في حي سكني" className="absolute inset-0 h-full w-full object-cover" loading="lazy" /><div className="absolute inset-0 bg-gradient-to-t from-[#172d45]/85 via-[#172d45]/20 to-transparent" /><div className="absolute inset-x-0 bottom-0 p-12 text-white"><div className="text-3xl font-bold leading-snug">ابدأ دفتر متجرك اليوم</div><p className="mt-3 max-w-sm text-sm leading-7 text-white/80">مخزونك ومبيعاتك وموردوك في مكان واحد واضح.</p></div></div></div>;
 }
 
 const navItems = [
@@ -156,85 +158,9 @@ function Shell({ children }: { children: ReactNode }) {
   </div>;
 }
 
-function PageTitle({ title, subtitle, action }: { title: string; subtitle: string; action?: ReactNode }) {
-  return <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><div><h1 className="m-0 text-[25px] font-bold tracking-tight text-[#1d2d42]">{title}</h1><p className="mb-0 mt-1 text-sm text-[#5a6877]">{subtitle}</p></div>{action}</div>;
-}
-function Button({ children, onClick, secondary = false, danger = false, testId, type = 'button', disabled = false }: { children: ReactNode; onClick?: () => void; secondary?: boolean; danger?: boolean; testId: string; type?: 'button' | 'submit'; disabled?: boolean }) {
-  return <button type={type} onClick={onClick} disabled={disabled} data-testid={testId} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-55 ${danger ? 'border border-[#f0d4d1] bg-[#fff5f3] text-[#8d2f29] hover:bg-[#fce9e6]' : secondary ? 'border border-[#dfe4df] bg-white text-[#344357] hover:bg-[#f8f9f6]' : 'bg-[#25694a] text-white shadow-sm hover:bg-[#1f4d38]'}`}>{children}</button>;
-}
-function LoadingBlock({ label = 'جارٍ تحميل البيانات' }: { label?: string }) {
-  return <div className="grid gap-4" role="status" data-testid="status-loading"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="panel h-36 animate-pulse bg-[#eef0ea]" />)}</div><div className="panel h-64 animate-pulse bg-[#eef0ea]" /><span className="sr-only">{label}</span></div>;
-}
-function ErrorBlock({ retry }: { retry: () => void }) {
-  return <div className="panel flex min-h-56 flex-col items-center justify-center p-8 text-center" data-testid="status-error"><img src={emptyBox} width={160} height={160} alt="" loading="lazy" className="mb-2 h-24 w-24 object-contain opacity-80" /><div className="mb-2 flex items-center gap-2 text-[#8d2f29]"><AlertTriangle size={18} /></div><h3 className="m-0 text-base font-bold">تعذر تحميل البيانات</h3><p className="mt-2 text-sm text-[#5a6877]">تحقق من اتصالك ثم أعد المحاولة.</p><Button secondary testId="button-retry" onClick={retry}><RotateCw size={15} />إعادة المحاولة</Button></div>;
-}
-function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
-  return <div className="flex min-h-52 flex-col items-center justify-center px-5 py-10 text-center" data-testid="state-empty"><img src={emptyBox} width={160} height={160} alt="صندوق فارغ" loading="lazy" className="mb-3 h-28 w-28 object-contain" /><h3 className="m-0 text-base font-bold text-[#28394d]">{title}</h3><p className="mb-4 mt-2 max-w-sm text-sm leading-6 text-[#5a6877]">{body}</p>{action}</div>;
-}
-function EGP({ amount }: { amount: number }) { return <span dir="ltr" className="whitespace-nowrap">{Number(amount || 0).toLocaleString('ar-EG')} <small className="text-[.8em] text-[#5a6877]">ج.م</small></span>; }
-function StatCard({ icon: Icon, label, value, note, accent }: { icon: typeof Wallet; label: string; value: ReactNode; note: string; accent: string }) {
-  return <div className="panel metric-card flex flex-col p-5"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${accent}`}><Icon size={20} /></div><div className="text-sm font-semibold text-[#4d5c6b]">{label}</div></div><div className="mt-4 text-[28px] font-bold leading-none tracking-tight text-[#1d2d42]" data-testid={`metric-${label}`}>{value}</div><div className="mt-3 border-t border-[#edf0eb] pt-3 text-xs leading-5 text-[#5a6877]">{note}</div></div>;
-}
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  return <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#122237]/45 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" role="presentation" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><section className="max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-[26px] border border-[#e7e8e4] bg-[#fffefa] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:rounded-[26px] sm:p-7" role="dialog" aria-modal="true" aria-label={title}><div className="mb-5 flex items-center justify-between"><h2 className="m-0 text-xl font-bold">{title}</h2><button onClick={onClose} data-testid="button-dialog-close" className="rounded-lg p-2 text-[#5a6877] hover:bg-[#f1f2ee]"><X size={19} /></button></div>{children}</section></div>;
-}
-function Field({ label, ...props }: InputHTMLAttributes<HTMLInputElement> & { label: string }) {
-  return <label className="grid gap-2 text-sm font-semibold text-[#344357]">{label}<input {...props} className="h-11 rounded-2xl border border-[#c7d0ca] bg-white px-3 outline-none transition focus:border-[#25694a] focus:ring-2 focus:ring-[#25694a]/20 focus:ring-2 focus:ring-[#b6d3c0]/50" /></label>;
-}
-function SelectField({ label, children, ...props }: SelectHTMLAttributes<HTMLSelectElement> & { label: string; children: ReactNode }) {
-  return <label className="grid gap-2 text-sm font-semibold text-[#344357]">{label}<select {...props} className="h-11 rounded-2xl border border-[#c7d0ca] bg-white px-3 outline-none focus:border-[#25694a] focus:ring-2 focus:ring-[#25694a]/20">{children}</select></label>;
-}
-function getErrorMessage(error: unknown) { return error instanceof Error ? error.message : 'حدث خطأ أثناء حفظ البيانات'; }
-function useApiOptions() { return {}; }
 
 function SalesTable({ sales }: { sales: Sale[] }) {
-  return <div className="overflow-x-auto"><table className="responsive-table w-full text-right text-sm"><thead className="bg-[#f8f9f6] text-[11px] font-semibold text-[#5a6877]"><tr><th className="px-5 py-3">رقم العملية</th><th className="px-4 py-3">المنتجات</th><th className="px-4 py-3">التاريخ</th><th className="px-5 py-3">الإجمالي</th></tr></thead><tbody className="divide-y divide-[#edf0eb]">{sales.map(s => <tr key={s.id} data-testid={`row-sale-${s.id}`} className="hover:bg-[#fbfcf9]"><td data-label="رقم العملية" className="px-5 py-4 font-bold">#{s.id}</td><td data-label="المنتجات" className="px-4 py-4 text-[#627080]">{s.items?.length || 0} أصناف</td><td data-label="التاريخ" className="px-4 py-4 text-[#627080]">{new Date(s.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td data-label="الإجمالي" className="px-5 py-4 font-bold"><EGP amount={s.total} /></td></tr>)}</tbody></table></div>;
-}
-
-function ProductPage() {
-  const api = useApiOptions(); const client = useQueryClient();
-  const q = useListProducts(api); const suppliersQ = useListSuppliers(api);
-  const create = useCreateProduct(api); const update = useUpdateProduct(api); const remove = useDeleteProduct(api);
-  const products = q.data || []; const suppliers = suppliersQ.data || [];
-  const [search, setSearch] = useState(''); const [category, setCategory] = useState('all');
-  const [form, setForm] = useState<Product | null | false>(false); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const categories = [...new Set(products.map(p => p.category.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ar'));
-  const filtered = products.filter(p => (category === 'all' || p.category.trim() === category) && `${p.name} ${p.category}`.toLowerCase().includes(search.toLowerCase()));
-  const refresh = async () => { await Promise.all([client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() }), client.invalidateQueries({ queryKey: [getGetReportsQueryKey()[0]] })]); };
-  const submit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); setError('');
-    const f = new FormData(e.currentTarget);
-    const reason = String(f.get('reason') || '').trim();
-    const payload = { name: String(f.get('name')), category: String(f.get('category')), purchasePrice: Number(f.get('purchasePrice')), sellingPrice: Number(f.get('sellingPrice')), quantity: Number(f.get('quantity')), minStock: Number(f.get('minStock')), supplierId: f.get('supplierId') ? Number(f.get('supplierId')) : null, ...(reason ? { reason } : {}) };
-    try { if (form) await update.mutateAsync({ id: form.id, data: payload }); else await create.mutateAsync({ data: payload }); await refresh(); setNotice(form ? 'تم تحديث بيانات المنتج.' : 'تمت إضافة المنتج بنجاح.'); setForm(false); } catch (err) { setError(getErrorMessage(err)); }
-  };
-  const deleteItem = async (p: Product) => { if (!window.confirm(`حذف المنتج «${p.name}»؟`)) return; try { await remove.mutateAsync({ id: p.id }); await refresh(); setNotice('تم حذف المنتج.'); setError(''); } catch (e) { setError(getErrorMessage(e)); } };
-  if (q.isLoading) return <LoadingBlock />;
-  if (q.isError) return <ErrorBlock retry={() => q.refetch()} />;
-  return <div className="fade-up">
-     <PageTitle title="المنتجات والمخزون" subtitle="تابع أصناف متجرك، أسعارها، والكميات المتاحة." action={<Button testId="button-add-product" onClick={() => { setForm(null); setError(''); setNotice(''); }}><Plus size={16} />إضافة منتج</Button>} />
-     {notice && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#bfdcc9] bg-[#e8f4ec] px-4 py-3 text-sm font-semibold text-[#1f5a3f] shadow-sm" role="status" data-testid="status-product-success">{notice}</div>}
-    <div className="panel mb-5 flex flex-wrap items-center gap-3 p-4">
-      <label className="relative min-w-[220px] flex-1"><Search className="absolute right-3 top-3 text-[#5a6877]" size={17} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن منتج أو فئة..." data-testid="input-search-products" className="h-11 w-full rounded-2xl border border-[#c7d0ca] bg-white pr-10 pl-3 text-sm outline-none focus:border-[#25694a] focus:ring-2 focus:ring-[#25694a]/20" /></label>
-      <label className="flex items-center gap-2 text-xs text-[#5a6877]"><Filter size={15} /><select value={category} onChange={e => setCategory(e.target.value)} data-testid="filter-product-category" className="h-11 rounded-2xl border border-[#dfe4df] bg-white px-3 text-sm text-[#344357]"><option value="all">كل الفئات</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
-      <span className="mr-auto text-xs text-[#5a6877]" data-testid="text-products-count">{filtered.length} منتج</span>
-    </div>
-    <div className="panel overflow-hidden">{filtered.length ? <div className="overflow-x-auto"><table className="responsive-table w-full text-right text-sm"><thead className="bg-[#f8f9f6] text-[11px] text-[#5a6877]"><tr><th className="px-5 py-4">المنتج</th><th className="px-4 py-4">الفئة</th><th className="px-4 py-4">سعر الشراء</th><th className="px-4 py-4">سعر البيع</th><th className="px-4 py-4">الكمية</th><th className="px-5 py-4">الإجراءات</th></tr></thead><tbody className="divide-y divide-[#edf0eb]">{filtered.map(p => <tr key={p.id} data-testid={`row-product-${p.id}`} className="hover:bg-[#fbfcf9]"><td data-label="المنتج" className="px-5 py-4"><div className="font-bold">{p.name}</div><div className="mt-1 text-[11px] text-[#5a6877]">حد إعادة الطلب {p.minStock}</div></td><td data-label="الفئة" className="px-4 py-4 text-[#566575]">{p.category}</td><td data-label="سعر الشراء" className="px-4 py-4"><EGP amount={p.purchasePrice} /></td><td data-label="سعر البيع" className="px-4 py-4 font-semibold"><EGP amount={p.sellingPrice} /></td><td data-label="الكمية" className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${p.quantity <= p.minStock ? 'bg-[#fde8e4] text-[#8d2f29]' : 'bg-[#e3f1e8] text-[#1f5a3f]'}`}>{p.quantity} قطعة</span></td><td data-label="الإجراءات" className="px-5 py-4"><div className="flex gap-1"><button onClick={() => { setForm(p); setError(''); }} data-testid={`button-edit-product-${p.id}`} aria-label="تعديل المنتج" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#4d5f72] hover:bg-[#edf3ef] hover:text-[#1f5a3f]"><Pencil size={16} /></button><button onClick={() => deleteItem(p)} data-testid={`button-delete-product-${p.id}`} aria-label="حذف المنتج" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#5a6877] hover:bg-[#fff0ed] hover:text-[#8d2f29]"><Trash2 size={16} /></button></div></td></tr>)}</tbody></table></div> : <EmptyState title={search || category !== 'all' ? 'لا توجد نتائج مطابقة' : 'ابدأ بإضافة منتجاتك'} body={search || category !== 'all' ? 'جرّب كلمة بحث أخرى أو غيّر الفئة المختارة.' : 'أضف أصناف متجرك لتتابع الكميات والأسعار في مكان واحد.'} action={!search && category === 'all' ? <Button testId="button-empty-add-product" onClick={() => setForm(null)}><Plus size={15} />إضافة أول منتج</Button> : undefined} />}</div>
-    {error && <p className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fff1ef] px-4 py-3 text-sm font-medium text-[#8d2f29]" data-testid="status-product-error">{error}</p>}
-    {form !== false && <Dialog title={form ? 'تعديل المنتج' : 'إضافة منتج جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
-      <Field label="اسم المنتج" name="name" required defaultValue={form?.name || ''} data-testid="input-product-name" />
-      <Field label="الفئة" name="category" required defaultValue={form?.category || ''} placeholder="اختر فئة موجودة أو اكتب جديدة" list="product-categories" autoComplete="off" data-testid="input-product-category" />
-      <datalist id="product-categories">{categories.map(c => <option key={c} value={c} />)}</datalist>
-      <Field label="سعر الشراء (ج.م)" name="purchasePrice" type="number" min="0" step="0.01" required defaultValue={form?.purchasePrice ?? ''} data-testid="input-product-cost" />
-      <Field label="سعر البيع (ج.م)" name="sellingPrice" type="number" min="0" step="0.01" required defaultValue={form?.sellingPrice ?? ''} data-testid="input-product-price" />
-      <Field label="الكمية الحالية" name="quantity" type="number" min="0" required defaultValue={form?.quantity ?? 0} data-testid="input-product-quantity" />
-       <Field label={form ? 'سبب تسوية الكمية (مطلوب عند تغييرها)' : 'سبب الرصيد الافتتاحي (اختياري)'} name="reason" maxLength={500} defaultValue="" placeholder={form ? 'مثال: جرد فعلي للمخزون' : 'مثال: رصيد بداية التشغيل'} data-testid="input-product-stock-reason" />
-      <Field label="حد المخزون الأدنى" name="minStock" type="number" min="0" required defaultValue={form?.minStock ?? 5} data-testid="input-product-min-stock" />
-      <SelectField label="المورد" name="supplierId" defaultValue={form?.supplierId || ''} data-testid="select-product-supplier"><option value="">بدون مورد</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</SelectField>
-      {error && <div className="sm:col-span-2 text-sm font-medium text-[#8d2f29]" data-testid="status-product-error">{error}</div>}
-      <div className="mt-1 flex gap-2 sm:col-span-2"><Button type="submit" testId="button-save-product" disabled={create.isPending || update.isPending}>{create.isPending || update.isPending ? 'جارٍ الحفظ...' : 'حفظ المنتج'}</Button><Button secondary testId="button-cancel-product" onClick={() => setForm(false)}>إلغاء</Button></div>
-    </form></Dialog>}
-  </div>;
+  return <div className="overflow-x-auto"><table className="responsive-table w-full text-right text-sm"><thead className="bg-[#f4f1e6] text-[11px] font-semibold text-[#5a6b61]"><tr><th className="px-5 py-3">رقم العملية</th><th className="px-4 py-3">المنتجات</th><th className="px-4 py-3">التاريخ</th><th className="px-5 py-3">الإجمالي</th></tr></thead><tbody className="divide-y divide-[#ece7d6]">{sales.map(s => <tr key={s.id} data-testid={`row-sale-${s.id}`} className="hover:bg-[#f7f3e7]"><td data-label="رقم العملية" className="px-5 py-4 font-bold">#{s.id}</td><td data-label="المنتجات" className="px-4 py-4 text-[#627080]">{s.items?.length || 0} أصناف</td><td data-label="التاريخ" className="px-4 py-4 text-[#627080]">{new Date(s.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td data-label="الإجمالي" className="px-5 py-4 font-bold"><EGP amount={s.total} /></td></tr>)}</tbody></table></div>;
 }
 
 function SalesPage() {
@@ -261,20 +187,20 @@ function SalesPage() {
   return <div className="fade-up">
     <PageTitle title="المبيعات" subtitle="سجّل المبيعات بسهولة وراجع سجل عمليات متجرك." />
     <div className="grid items-start gap-5 xl:grid-cols-[.85fr_1.4fr]">
-      <section className="panel p-5 sm:p-6"><div className="mb-5 flex items-start justify-between"><div><h2 className="m-0 text-lg font-bold">عملية بيع جديدة</h2><p className="mb-0 mt-1 text-xs text-[#5a6877]">أضف المنتجات وحدد الكمية</p></div><span className="rounded-2xl bg-[#eaf4ed] p-2.5 text-[#1f5a3f]"><ShoppingCart size={19} /></span></div>
+      <section className="panel p-5 sm:p-6"><div className="mb-5 flex items-start justify-between"><div><h2 className="m-0 text-lg font-bold">عملية بيع جديدة</h2><p className="mb-0 mt-1 text-xs text-[#5a6b61]">أضف المنتجات وحدد الكمية</p></div><span className="rounded-2xl bg-[#e6efd0] p-2.5 text-[#1f6b45]"><ShoppingCart size={19} /></span></div>
         <div className="grid gap-3 sm:grid-cols-[1fr_100px_auto] xl:grid-cols-1 2xl:grid-cols-[1fr_100px_auto]">
           <SelectField label="المنتج" value={selected} onChange={e => setSelected(e.target.value)} data-testid="select-sale-product"><option value="">اختر منتجاً</option>{products.map(p => <option key={p.id} value={p.id} disabled={p.quantity < 1}>{p.name} — {p.quantity} متاح</option>)}</SelectField>
           <Field label="الكمية" type="number" min="1" value={qty} onChange={e => setQty(Number(e.target.value))} data-testid="input-sale-quantity" />
           <div className="flex items-end"><Button testId="button-add-to-sale" onClick={add} secondary><Plus size={16} />أضف</Button></div>
         </div>
-        <div className="my-5 border-t border-[#edf0eb]" />
-        {cart.length ? <div className="space-y-3">{cart.map(item => { const p = products.find(x => x.id === item.productId)!; return <div key={item.productId} className="flex items-center justify-between gap-2 rounded-2xl bg-[#f8f9f6] p-3" data-testid={`cart-item-${p.id}`}><div><div className="text-sm font-bold">{p.name}</div><div className="mt-1 text-xs text-[#5a6877]">{item.quantity} × <EGP amount={p.sellingPrice} /></div></div><div className="flex items-center gap-3"><b className="text-sm"><EGP amount={item.quantity * p.sellingPrice} /></b><button aria-label="إزالة المنتج" onClick={() => setCart(old => old.filter(i => i.productId !== item.productId))} data-testid={`button-remove-cart-${p.id}`} className="rounded-lg p-1.5 text-[#5a6877] hover:bg-[#fff0ed]"><X size={16} /></button></div></div>; })}</div> : <div className="rounded-2xl border border-dashed border-[#dfe4df] py-7 text-center text-sm text-[#5a6877]" data-testid="state-cart-empty">لم تُضف منتجات إلى هذه العملية</div>}
-        <div className="mt-5 flex items-center justify-between border-t border-[#edf0eb] pt-4"><span className="text-sm font-semibold text-[#627080]">الإجمالي</span><b className="text-xl"><EGP amount={total} /></b></div>
-        {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fff1ef] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-sale-error">{error}</div>}
-        {notice && <div className="mt-3 flex items-center gap-2 rounded-2xl bg-[#eaf4ed] p-3 text-sm text-[#1f5a3f]" data-testid="status-sale-success"><Check size={16} />{notice}</div>}
+        <div className="my-5 border-t border-[#ece7d6]" />
+        {cart.length ? <div className="space-y-3">{cart.map(item => { const p = products.find(x => x.id === item.productId)!; return <div key={item.productId} className="flex items-center justify-between gap-2 rounded-2xl bg-[#f4f1e6] p-3" data-testid={`cart-item-${p.id}`}><div><div className="text-sm font-bold">{p.name}</div><div className="mt-1 text-xs text-[#5a6b61]">{item.quantity} × <EGP amount={p.sellingPrice} /></div></div><div className="flex items-center gap-3"><b className="text-sm"><EGP amount={item.quantity * p.sellingPrice} /></b><button aria-label="إزالة المنتج" onClick={() => setCart(old => old.filter(i => i.productId !== item.productId))} data-testid={`button-remove-cart-${p.id}`} className="rounded-lg p-1.5 text-[#5a6b61] hover:bg-[#fff0ed]"><X size={16} /></button></div></div>; })}</div> : <div className="rounded-2xl border border-dashed border-[#d6d0bb] py-7 text-center text-sm text-[#5a6b61]" data-testid="state-cart-empty">لم تُضف منتجات إلى هذه العملية</div>}
+        <div className="mt-5 flex items-center justify-between border-t border-[#ece7d6] pt-4"><span className="text-sm font-semibold text-[#627080]">الإجمالي</span><b className="text-xl"><EGP amount={total} /></b></div>
+        {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fbe9e4] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-sale-error">{error}</div>}
+        {notice && <div className="mt-3 flex items-center gap-2 rounded-2xl bg-[#e6efd0] p-3 text-sm text-[#1f6b45]" data-testid="status-sale-success"><Check size={16} />{notice}</div>}
         <Button testId="button-complete-sale" onClick={checkout} disabled={!cart.length || createSale.isPending}><Check size={16} />{createSale.isPending ? 'جارٍ تسجيل البيع...' : 'تأكيد عملية البيع'}</Button>
       </section>
-      <section className="panel overflow-hidden"><div className="border-b border-[#edf0eb] px-5 py-4"><h2 className="m-0 text-base font-bold">سجل المبيعات</h2><p className="mb-0 mt-1 text-xs text-[#5a6877]">العمليات الأخيرة المسجلة</p></div>{sales.length ? <SalesTable sales={sales} /> : <EmptyState title="لا توجد عمليات بيع" body="ستظهر هنا كل عملية تسجلها في متجرك." />}</section>
+      <section className="panel overflow-hidden"><div className="border-b border-[#ece7d6] px-5 py-4"><h2 className="m-0 text-base font-bold">سجل المبيعات</h2><p className="mb-0 mt-1 text-xs text-[#5a6b61]">العمليات الأخيرة المسجلة</p></div>{sales.length ? <SalesTable sales={sales} /> : <EmptyState title="لا توجد عمليات بيع" body="ستظهر هنا كل عملية تسجلها في متجرك." />}</section>
     </div>
   </div>;
 }
@@ -290,10 +216,10 @@ function SupplierPage() {
   if (q.isError) return <ErrorBlock retry={() => q.refetch()} />;
   return <div className="fade-up">
      <PageTitle title="الموردون" subtitle="بيانات الموردين والأصناف التي يوفرونها." action={<Button testId="button-add-supplier" onClick={() => { setForm(null); setError(''); setNotice(''); }}><Plus size={16} />إضافة مورد</Button>} />
-     {notice && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#bfdcc9] bg-[#e8f4ec] px-4 py-3 text-sm font-semibold text-[#1f5a3f] shadow-sm" role="status" data-testid="status-supplier-success">{notice}</div>}
-    <div className="mb-5"><label className="relative block max-w-md"><Search size={17} className="absolute right-3 top-3 text-[#5a6877]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن مورد..." data-testid="input-search-suppliers" className="h-11 w-full rounded-2xl border border-[#dfe4df] bg-white pr-10 pl-3 text-sm outline-none focus:border-[#25694a] focus:ring-2 focus:ring-[#25694a]/20" /></label></div>
-    {filtered.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((s, index) => <article key={s.id} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-md" data-testid={`card-supplier-${s.id}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-2xl font-bold ${['bg-[#eaf2ed] text-[#1f5a3f]', 'bg-[#edf1f6] text-[#426181]', 'bg-[#f5efe4] text-[#9b7842]'][index % 3]}`}><Users size={19} /></div><div><h2 className="m-0 text-base font-bold">{s.name}</h2><div className="mt-1 text-xs text-[#5a6877]">مورد رقم {s.id}</div></div></div><div className="flex"><button onClick={() => { setForm(s); setError(''); }} data-testid={`button-edit-supplier-${s.id}`} aria-label="تعديل المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#4d5f72] hover:bg-[#edf3ef]"><Pencil size={15} /></button><button onClick={() => deleteItem(s)} data-testid={`button-delete-supplier-${s.id}`} aria-label="حذف المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#5a6877] hover:bg-[#fff0ed] hover:text-[#8d2f29]"><Trash2 size={15} /></button></div></div><div className="mt-5 grid gap-3 border-t border-[#edf0eb] pt-4"><div className="flex items-center gap-2 text-sm text-[#617080]"><span className="text-xs font-semibold text-[#5a6877]">الهاتف</span><span dir="ltr">{s.phone || '—'}</span></div><div><div className="mb-2 text-xs font-semibold text-[#5a6877]">الأصناف التي يوفرها</div><div className="rounded-lg bg-[#f8f9f6] px-3 py-2 text-sm text-[#425163]">{s.products || 'لم تُحدد أصناف بعد'}</div></div></div></article>)}</div> : <div className="panel"><EmptyState title={search ? 'لا توجد نتائج مطابقة' : 'سجّل موردي متجرك'} body={search ? 'جرّب البحث باسم أو رقم هاتف مختلف.' : 'احتفظ ببيانات التواصل والأصناف التي يوفرها كل مورد.'} action={!search ? <Button testId="button-empty-add-supplier" onClick={() => setForm(null)}><Plus size={15} />إضافة مورد</Button> : undefined} /></div>}
-    {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fff1ef] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</div>}
+     {notice && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#bfdcc9] bg-[#e8f4ec] px-4 py-3 text-sm font-semibold text-[#1f6b45] shadow-sm" role="status" data-testid="status-supplier-success">{notice}</div>}
+    <div className="mb-5"><label className="relative block max-w-md"><Search size={17} className="absolute right-3 top-3 text-[#5a6b61]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن مورد..." data-testid="input-search-suppliers" className="h-11 w-full rounded-2xl border border-[#d6d0bb] bg-white pr-10 pl-3 text-sm outline-none focus:border-[#17402d] focus:ring-2 focus:ring-[#17402d]/20" /></label></div>
+    {filtered.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((s, index) => <article key={s.id} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-md" data-testid={`card-supplier-${s.id}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-2xl font-bold ${['bg-[#eaf2ed] text-[#1f6b45]', 'bg-[#edf1f6] text-[#426181]', 'bg-[#f5efe4] text-[#9b7842]'][index % 3]}`}><Users size={19} /></div><div><h2 className="m-0 text-base font-bold">{s.name}</h2><div className="mt-1 text-xs text-[#5a6b61]">مورد رقم {s.id}</div></div></div><div className="flex"><button onClick={() => { setForm(s); setError(''); }} data-testid={`button-edit-supplier-${s.id}`} aria-label="تعديل المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#4d5f72] hover:bg-[#edf3ef]"><Pencil size={15} /></button><button onClick={() => deleteItem(s)} data-testid={`button-delete-supplier-${s.id}`} aria-label="حذف المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#5a6b61] hover:bg-[#fff0ed] hover:text-[#8d2f29]"><Trash2 size={15} /></button></div></div><div className="mt-5 grid gap-3 border-t border-[#ece7d6] pt-4"><div className="flex items-center gap-2 text-sm text-[#617080]"><span className="text-xs font-semibold text-[#5a6b61]">الهاتف</span><span dir="ltr">{s.phone || '—'}</span></div><div><div className="mb-2 text-xs font-semibold text-[#5a6b61]">الأصناف التي يوفرها</div><div className="rounded-lg bg-[#f4f1e6] px-3 py-2 text-sm text-[#425163]">{s.products || 'لم تُحدد أصناف بعد'}</div></div></div></article>)}</div> : <div className="panel"><EmptyState title={search ? 'لا توجد نتائج مطابقة' : 'سجّل موردي متجرك'} body={search ? 'جرّب البحث باسم أو رقم هاتف مختلف.' : 'احتفظ ببيانات التواصل والأصناف التي يوفرها كل مورد.'} action={!search ? <Button testId="button-empty-add-supplier" onClick={() => setForm(null)}><Plus size={15} />إضافة مورد</Button> : undefined} /></div>}
+    {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fbe9e4] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</div>}
     {form !== false && <Dialog title={form ? 'تعديل بيانات المورد' : 'إضافة مورد جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4"><Field label="اسم المورد" name="name" required defaultValue={form?.name || ''} data-testid="input-supplier-name" /><Field label="رقم الهاتف" name="phone" type="tel" defaultValue={form?.phone || ''} data-testid="input-supplier-phone" /><Field label="الأصناف التي يوفرها" name="products" required defaultValue={form?.products || ''} placeholder="مثال: مشروبات، وجبات خفيفة" data-testid="input-supplier-products" />{error && <p className="m-0 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</p>}<div className="flex gap-2"><Button type="submit" testId="button-save-supplier" disabled={create.isPending || update.isPending}>{create.isPending || update.isPending ? 'جارٍ الحفظ...' : 'حفظ المورد'}</Button><Button secondary testId="button-cancel-supplier" onClick={() => setForm(false)}>إلغاء</Button></div></form></Dialog>}
   </div>;
 }
@@ -317,7 +243,7 @@ function SuppliersRoute() { return <ProtectedPage><SupplierPage /></ProtectedPag
 function ReportsRoute() { return <ProtectedPage><ReportsPage /></ProtectedPage>; }
 function InventoryMovementsRoute() { return <ProtectedPage><InventoryMovementsPage /></ProtectedPage>; }
 function PurchasesRoute() { return <ProtectedPage><PurchasesPage /></ProtectedPage>; }
-function NotFoundPage() { return <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#f7f6f1] p-6 text-center" dir="rtl"><div className="text-6xl font-bold text-[#1f5a3f]">٤٠٤</div><h1 className="mt-4 text-2xl font-bold">الصفحة غير موجودة</h1><p className="text-sm text-[#5a6877]">قد يكون الرابط غير صحيح أو أن الصفحة نُقلت.</p><Link href="/" className="mt-4 rounded-2xl bg-[#25694a] px-5 py-3 text-sm font-bold text-white" data-testid="link-not-found-home">العودة للرئيسية</Link></div>; }
+function NotFoundPage() { return <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#f7f6f1] p-6 text-center" dir="rtl"><div className="text-6xl font-bold text-[#1f6b45]">٤٠٤</div><h1 className="mt-4 text-2xl font-bold">الصفحة غير موجودة</h1><p className="text-sm text-[#5a6b61]">قد يكون الرابط غير صحيح أو أن الصفحة نُقلت.</p><Link href="/" className="mt-4 rounded-2xl bg-[#17402d] px-5 py-3 text-sm font-bold text-white" data-testid="link-not-found-home">العودة للرئيسية</Link></div>; }
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();

@@ -157,3 +157,19 @@ textarea.tg-input { height:auto; padding:10px 12px; }
 .tg-table th { background:#f4f1e6; }
 .responsive-table td::before { color: var(--tg-mute); }
 .tg-hero-fade { animation: tgZoom 1s cubic-bezier(.2,.7,.2,1) both; }
+
+/* ---------- Ledger system: notices, pills, icon buttons, input affordances ---------- */
+.tg-notice { display:flex; gap:10px; border-radius:16px; border:1px solid; padding:12px 16px; font-size:14px; line-height:1.7; }
+.tg-notice-ok { align-items:center; border-color:#cfdcb0; background:#eef4d8; color:#1f4d34; font-weight:600; }
+.tg-notice-err { border-color:#efcfc8; background:#fbe9e4; color:var(--tg-danger); font-weight:500; }
+.tg-notice-info { border-color:#d6d0bb; background:#f4f1e6; color:#2c4337; }
+.tg-notice-warn { border-color:#e8dcc4; background:#fbf6ea; color:#6f5a32; font-size:13px; }
+.tg-label-sm { gap:4px; font-size:12px; }
+.tg-chip-lg { gap:8px; padding:8px 14px; font-size:12px; }
+.tg-pill { display:inline-flex; min-height:44px; align-items:center; border-radius:9999px; border:1px solid #cfc8b1; background:#fbf9f2; padding:0 16px; font-size:13px; font-weight:700; color:#2c4337; transition: background .15s; }
+.tg-pill:hover { background:#e6efd0; }
+.tg-icon-btn { display:inline-flex; height:44px; width:44px; align-items:center; justify-content:center; border-radius:12px; color:var(--tg-mute); transition: background .15s, color .15s; }
+.tg-icon-btn:hover { background:#fbe9e4; color:var(--tg-danger); }
+.tg-icon-btn:disabled { opacity:.4; cursor:not-allowed; }
+.tg-input.has-icon-r { padding-right:40px; } .tg-input.has-suffix { padding-left:56px; }
+.tg-btn-sm { min-height:44px; padding:0 14px; font-size:13px; }

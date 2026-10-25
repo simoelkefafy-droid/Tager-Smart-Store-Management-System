@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { getGetReportsQueryKey, useGetReports, useListProducts, type Report } from '@workspace/api-client-react';
-import { Activity, AlertTriangle, BarChart3, CalendarDays, Download, Filter, Info, Package, RotateCw, ShoppingBag, Wallet } from 'lucide-react';
+import { Activity, CalendarDays, Download, Filter, Package, ShoppingBag, Wallet } from 'lucide-react';
+import { Button, EmptyState, ErrorBlock, Field, LoadingBlock, Notice, PageTitle, SectionCard, SelectField, StatCard } from '@/components/app/ui';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const TZ = 'Africa/Cairo';
@@ -24,21 +25,8 @@ const fmtDate = (s: string, long = false) => new Date(`${s.slice(0, 10)}T12:00:0
 
 function Money({ amount }: { amount: number | null | undefined }) {
   if (amount === null || amount === undefined) return <span className="text-[#8d2f29]" title="التكلفة غير متاحة لبعض البنود">غير متاح</span>;
-  return <span dir="ltr" className={`whitespace-nowrap ${amount < 0 ? 'text-[#8d2f29]' : ''}`}>{fmtNum(amount)} <small className="text-[.8em] text-[#5a6b61]">ج.م</small></span>;
+  return <span dir="ltr" className={`tg-num whitespace-nowrap ${amount < 0 ? 'text-[#8d2f29]' : ''}`}>{fmtNum(amount)} <small className="text-[.8em] text-[#5a6b61]">ج.م</small></span>;
 }
-function Btn({ children, onClick, secondary, testId, type = 'button', disabled }: { children: ReactNode; onClick?: () => void; secondary?: boolean; testId: string; type?: 'button' | 'submit'; disabled?: boolean }) {
-  return <button type={type} onClick={onClick} disabled={disabled} data-testid={testId} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-bold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-55 ${secondary ? 'border border-[#d6d0bb] bg-white text-[#2c4337] hover:bg-[#f4f1e6]' : 'bg-[#17402d] text-white shadow-sm hover:bg-[#0f2f20]'}`}>{children}</button>;
-}
-function Card({ icon: Icon, label, value, note, accent, testId }: { icon: typeof Wallet; label: string; value: ReactNode; note: ReactNode; accent: string; testId: string }) {
-  return <div className="panel metric-card p-5"><div className="flex items-start justify-between gap-2"><div className="min-w-0"><div className="text-sm text-[#5a6b61]">{label}</div><div className="mt-3 text-[22px] font-bold tracking-tight text-[#14261d]" data-testid={testId}>{value}</div></div><div className={`rounded-2xl p-3 ${accent}`}><Icon size={19} /></div></div><div className="mt-3 text-xs leading-5 text-[#5a6b61]">{note}</div></div>;
-}
-function Section({ title, sub, children, testId }: { title: string; sub: string; children: ReactNode; testId?: string }) {
-  return <section className="panel overflow-hidden" data-testid={testId}><div className="border-b border-[#ece7d6] px-5 py-4"><h2 className="m-0 text-base font-bold">{title}</h2><p className="mb-0 mt-1 text-xs text-[#5a6b61]">{sub}</p></div>{children}</section>;
-}
-function Empty({ title, body }: { title: string; body: string }) {
-  return <div className="flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center" data-testid="state-empty"><div className="mb-3 rounded-2xl bg-[#e6efd0] p-3 text-[#1f6b45]"><BarChart3 size={22} /></div><h3 className="m-0 text-base font-bold text-[#14261d]">{title}</h3><p className="mb-0 mt-2 max-w-sm text-sm leading-6 text-[#5a6b61]">{body}</p></div>;
-}
-
 type Applied = { from: string; to: string; productId: string };
 
 function csvCell(v: string | number | null | undefined) {
@@ -112,43 +100,42 @@ export function ReportsPage() {
   const dirty = from !== applied.from || to !== applied.to || productId !== applied.productId;
 
   return <div className="fade-up">
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4"><div><h1 className="m-0 text-[25px] font-bold tracking-tight text-[#14261d]">التقارير</h1><p className="mb-0 mt-1 text-sm text-[#5a6b61]">المبيعات وتكلفة البضاعة والربح الإجمالي بتوقيت القاهرة.</p></div>
-      <Btn secondary testId="button-export-report" disabled={!report || q.isFetching} onClick={() => report && exportCsv(report, applied, productName)}><Download size={15} />تصدير CSV</Btn></div>
+    <PageTitle title="التقارير" subtitle="المبيعات وتكلفة البضاعة والربح الإجمالي بتوقيت القاهرة." action={<Button secondary testId="button-export-report" disabled={!report || q.isFetching} onClick={() => report && exportCsv(report, applied, productName)}><Download size={15} />تصدير CSV</Button>} />
 
     <form onSubmit={submit} className="panel mb-4 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[auto_1fr_1fr_1.3fr_auto] lg:items-end">
       <div className="flex items-center gap-2 text-sm font-bold text-[#2c4337] lg:self-center"><CalendarDays size={18} className="text-[#1f6b45]" />الفلاتر</div>
-      <label className="grid gap-2 text-sm font-semibold text-[#2c4337]">من تاريخ<input type="date" value={from} max={to || undefined} onChange={e => setFrom(e.target.value)} data-testid="input-report-from" className="h-11 rounded-2xl border border-[#cfc8b1] bg-white px-3 outline-none focus:border-[#17402d] focus:ring-2 focus:ring-[#17402d]/20" /></label>
-      <label className="grid gap-2 text-sm font-semibold text-[#2c4337]">إلى تاريخ<input type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} data-testid="input-report-to" className="h-11 rounded-2xl border border-[#cfc8b1] bg-white px-3 outline-none focus:border-[#17402d] focus:ring-2 focus:ring-[#17402d]/20" /></label>
-      <label className="grid gap-2 text-sm font-semibold text-[#2c4337]">المنتج<select value={productId} onChange={e => setProductId(e.target.value)} data-testid="select-report-product" disabled={productsQ.isLoading} className="h-11 rounded-2xl border border-[#cfc8b1] bg-white px-3 outline-none focus:border-[#17402d] focus:ring-2 focus:ring-[#17402d]/20"><option value="">كل المنتجات</option>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
-      <Btn type="submit" testId="button-apply-report-filter" disabled={!!pendingErr}><Filter size={15} />تطبيق</Btn>
+      <Field label="من تاريخ" type="date" value={from} max={to || undefined} onChange={e => setFrom(e.target.value)} data-testid="input-report-from" />
+      <Field label="إلى تاريخ" type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} data-testid="input-report-to" />
+      <SelectField label="المنتج" value={productId} onChange={e => setProductId(e.target.value)} data-testid="select-report-product" disabled={productsQ.isLoading}><option value="">كل المنتجات</option>{products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</SelectField>
+      <Button type="submit" testId="button-apply-report-filter" disabled={!!pendingErr}><Filter size={15} />تطبيق</Button>
       <div className="flex flex-wrap items-center gap-2 sm:col-span-2 lg:col-span-5">
         <span className="text-xs text-[#5a6b61]">اختيار سريع:</span>
-        <button type="button" data-testid="button-range-today" onClick={() => apply({ from: today, to: today, productId })} className="rounded-full border border-[#d6d0bb] bg-white px-3 py-1.5 text-xs font-bold text-[#2c4337] hover:bg-[#e6efd0]">اليوم</button>
-        <button type="button" data-testid="button-range-month" onClick={() => apply({ from: monthStart, to: today, productId })} className="rounded-full border border-[#d6d0bb] bg-white px-3 py-1.5 text-xs font-bold text-[#2c4337] hover:bg-[#e6efd0]">الشهر الحالي</button>
+        <button type="button" data-testid="button-range-today" onClick={() => apply({ from: today, to: today, productId })} className="tg-pill">اليوم</button>
+        <button type="button" data-testid="button-range-month" onClick={() => apply({ from: monthStart, to: today, productId })} className="tg-pill">الشهر الحالي</button>
         {pendingErr && <span className="text-xs text-[#8d2f29]" role="alert" data-testid="status-date-error">{pendingErr}</span>}
         {productsQ.isError && <span className="text-xs text-[#8d2f29]">تعذر تحميل قائمة المنتجات.</span>}
         {dirty && !pendingErr && <span className="text-xs text-[#9b7842]" data-testid="status-pending-filters">لديك تغييرات لم تُطبّق بعد.</span>}
       </div>
     </form>
 
-    <div className="mb-5 flex gap-3 rounded-2xl border border-[#e8dcc4] bg-[#fbf6ea] px-4 py-3 text-xs leading-6 text-[#6f5a32]" data-testid="notice-gross-profit"><Info size={16} className="mt-1 shrink-0" /><div>المعروض هو <b>الربح الإجمالي</b> (المبيعات − تكلفة البضاعة المباعة) وليس صافي ربح: الخصومات والمرتجعات والمصروفات التشغيلية والضرائب غير مسجلة حالياً. التكلفة مأخوذة من تكلفة الوحدة المحفوظة وقت البيع (متوسط مرجّح للمشتريات)، لا من سعر الشراء الحالي.</div></div>
+    <Notice kind="warn" testId="notice-gross-profit" className="mb-5">المعروض هو <b>الربح الإجمالي</b> (المبيعات − تكلفة البضاعة المباعة) وليس صافي ربح: الخصومات والمرتجعات والمصروفات التشغيلية والضرائب غير مسجلة حالياً. التكلفة مأخوذة من تكلفة الوحدة المحفوظة وقت البيع (متوسط مرجّح للمشتريات)، لا من سعر الشراء الحالي.</Notice>
 
-    {appliedErr ? <div className="panel"><Empty title="الفلاتر غير صالحة" body={appliedErr} /></div>
-      : q.isLoading ? <div className="grid gap-4" role="status" data-testid="status-loading"><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[0, 1, 2, 3].map(i => <div key={i} className="panel h-32 animate-pulse bg-[#efeadb]" />)}</div><div className="panel h-72 animate-pulse bg-[#efeadb]" /><span className="sr-only">جارٍ تحميل التقرير</span></div>
-      : q.isError || !report ? <div className="panel flex min-h-56 flex-col items-center justify-center p-8 text-center" data-testid="status-error"><div className="mb-3 rounded-full bg-[#fbe9e4] p-3 text-[#b94d47]"><AlertTriangle size={21} /></div><h3 className="m-0 text-base font-bold">تعذر تحميل التقرير</h3><p className="mt-2 text-sm text-[#5a6b61]">تحقق من الفترة والاتصال ثم أعد المحاولة.</p><Btn secondary testId="button-retry" onClick={() => q.refetch()}><RotateCw size={15} />إعادة المحاولة</Btn></div>
+    {appliedErr ? <div className="panel"><EmptyState title="الفلاتر غير صالحة" body={appliedErr} /></div>
+      : q.isLoading ? <LoadingBlock label="جارٍ تحميل التقرير" />
+      : q.isError || !report ? <ErrorBlock title="تعذر تحميل التقرير" body="تحقق من الفترة والاتصال ثم أعد المحاولة." retry={() => q.refetch()} />
       : <div className={`grid gap-5 transition-opacity ${q.isFetching ? 'opacity-60' : ''}`}>
         <div className="text-xs text-[#5a6b61]" data-testid="text-applied-filters">التقرير المعروض: {fmtDate(applied.from, true)} – {fmtDate(applied.to, true)} · {productName} · {report.timeZone || TZ}</div>
-        {report.missingCostLines > 0 && <div className="flex gap-3 rounded-2xl border border-[#f0d4d1] bg-[#fbe9e4] px-4 py-3 text-sm text-[#8d2f29]" role="alert" data-testid="warning-missing-cost"><AlertTriangle size={17} className="mt-0.5 shrink-0" /><div>{report.missingCostLines.toLocaleString('ar-EG')} بند بيع بدون تكلفة محفوظة. لن نفترض تكلفتها صفراً، لذا تظهر التكلفة والربح «غير متاح» حيث تتأثر.</div></div>}
+        {report.missingCostLines > 0 && <Notice kind="err" testId="warning-missing-cost">{report.missingCostLines.toLocaleString('ar-EG')} بند بيع بدون تكلفة محفوظة. لن نفترض تكلفتها صفراً، لذا تظهر التكلفة والربح «غير متاح» حيث تتأثر.</Notice>}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card icon={CalendarDays} label="اليوم (القاهرة)" testId="metric-today" value={<Money amount={report.todaySales} />} note={`${report.todayCount.toLocaleString('ar-EG')} عملية · مستقل عن الفترة المختارة`} accent="bg-[#e8f2ec] text-[#1f6b45]" />
-          <Card icon={CalendarDays} label="الشهر الحالي" testId="metric-month" value={<Money amount={report.monthSales} />} note={`${report.monthCount.toLocaleString('ar-EG')} عملية · مستقل عن الفترة المختارة`} accent="bg-[#eaf0f6] text-[#385a7c]" />
+          <StatCard compact icon={CalendarDays} label="اليوم (القاهرة)" testId="metric-today" value={<Money amount={report.todaySales} />} note={`${report.todayCount.toLocaleString('ar-EG')} عملية · مستقل عن الفترة المختارة`} accent="bg-[#e8f2ec] text-[#1f6b45]" />
+          <StatCard compact icon={CalendarDays} label="الشهر الحالي" testId="metric-month" value={<Money amount={report.monthSales} />} note={`${report.monthCount.toLocaleString('ar-EG')} عملية · مستقل عن الفترة المختارة`} accent="bg-[#eaf0f6] text-[#385a7c]" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <Card icon={Wallet} label="مبيعات الفترة" testId="metric-sales" value={<Money amount={report.totalSales} />} note="إجمالي قيمة البيع" accent="bg-[#e8f2ec] text-[#1f6b45]" />
-          <Card icon={Package} label="تكلفة البضاعة المباعة" testId="metric-cost" value={<Money amount={report.totalCost} />} note={report.totalCost === null ? 'غير مكتملة بسبب بنود بلا تكلفة' : 'من تكلفة الوحدة وقت البيع'} accent="bg-[#f3eee4] text-[#927442]" />
-          <Card icon={Activity} label="الربح الإجمالي" testId="metric-profit" value={<Money amount={report.estimatedProfit} />} note="قبل المصروفات والضرائب — ليس صافي ربح" accent="bg-[#edf1f6] text-[#426181]" />
-          <Card icon={ShoppingBag} label="عدد عمليات البيع" testId="metric-count" value={report.salesCount.toLocaleString('ar-EG')} note="خلال الفترة" accent="bg-[#f5efe4] text-[#9b7842]" />
+          <StatCard compact icon={Wallet} label="مبيعات الفترة" testId="metric-sales" value={<Money amount={report.totalSales} />} note="إجمالي قيمة البيع" accent="bg-[#e8f2ec] text-[#1f6b45]" />
+          <StatCard compact icon={Package} label="تكلفة البضاعة المباعة" testId="metric-cost" value={<Money amount={report.totalCost} />} note={report.totalCost === null ? 'غير مكتملة بسبب بنود بلا تكلفة' : 'من تكلفة الوحدة وقت البيع'} accent="bg-[#f3eee4] text-[#927442]" />
+          <StatCard compact icon={Activity} label="الربح الإجمالي" testId="metric-profit" value={<Money amount={report.estimatedProfit} />} note="قبل المصروفات والضرائب — ليس صافي ربح" accent="bg-[#edf1f6] text-[#426181]" />
+          <StatCard compact icon={ShoppingBag} label="عدد عمليات البيع" testId="metric-count" value={report.salesCount.toLocaleString('ar-EG')} note="خلال الفترة" accent="bg-[#f5efe4] text-[#9b7842]" />
         </div>
 
         <div className="panel p-5" data-testid="section-comparison"><h2 className="m-0 text-base font-bold">مقارنة بالفترة السابقة</h2>
@@ -159,8 +146,8 @@ export function ReportsPage() {
           </div>
         </div>
 
-        <Section title="المبيعات والتكلفة والربح الإجمالي يومياً" sub="الأيام بلا تكلفة مكتملة تظهر فجوة في خطي التكلفة والربح" testId="chart-daily-sales">
-          {report.salesCount === 0 ? <Empty title="لا توجد مبيعات في هذه الفترة" body="غيّر الفترة أو المنتج، أو سجّل مبيعات جديدة." /> :
+        <SectionCard title="المبيعات والتكلفة والربح الإجمالي يومياً" sub="الأيام بلا تكلفة مكتملة تظهر فجوة في خطي التكلفة والربح" testId="chart-daily-sales">
+          {report.salesCount === 0 ? <EmptyState title="لا توجد مبيعات في هذه الفترة" body="غيّر الفترة أو المنتج، أو سجّل مبيعات جديدة." /> :
             <div className="h-[300px] p-3" dir="ltr" role="img" aria-label="رسم بياني يومي للمبيعات والتكلفة والربح الإجمالي، التفاصيل في الجدول أدناه">
               <ResponsiveContainer width="100%" height="100%"><ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#ece7d6" vertical={false} />
@@ -175,18 +162,18 @@ export function ReportsPage() {
               </ComposedChart></ResponsiveContainer>
             </div>}
           {report.daily.length > 0 && <details className="border-t border-[#ece7d6] px-5 py-3 text-sm"><summary className="cursor-pointer text-xs font-bold text-[#1f6b45]" data-testid="toggle-daily-table">عرض البيانات اليومية كجدول</summary><div className="mt-3 overflow-x-auto"><table className="w-full min-w-[520px] text-right text-sm"><thead className="bg-[#f4f1e6] text-[11px] text-[#5a6b61]"><tr><th className="px-3 py-2">التاريخ</th><th className="px-3 py-2">المبيعات</th><th className="px-3 py-2">التكلفة</th><th className="px-3 py-2">الربح الإجمالي</th><th className="px-3 py-2">العمليات</th></tr></thead><tbody className="divide-y divide-[#ece7d6]">{report.daily.map(d => <tr key={d.date} data-testid={`row-daily-${d.date}`}><td className="px-3 py-2">{fmtDate(d.date, true)}</td><td className="px-3 py-2"><Money amount={d.sales} /></td><td className="px-3 py-2"><Money amount={d.cost} /></td><td className="px-3 py-2"><Money amount={d.profit} /></td><td className="px-3 py-2">{d.salesCount.toLocaleString('ar-EG')}</td></tr>)}</tbody></table></div></details>}
-        </Section>
+        </SectionCard>
 
         <div className="grid gap-5 xl:grid-cols-[.8fr_1.4fr]">
-          <Section title="الأعلى مبيعاً (أفضل ٥)" sub="ترتيب حسب الكمية المباعة" testId="section-top5">
+          <SectionCard title="الأعلى مبيعاً (أفضل ٥)" sub="ترتيب حسب الكمية المباعة" testId="section-top5">
             {top.length ? <><div className="h-[220px] p-3" dir="ltr" role="img" aria-label="ترتيب أفضل خمسة منتجات حسب الكمية"><ResponsiveContainer width="100%" height="100%"><BarChart data={top} layout="vertical" margin={{ left: 0, right: 16 }}><CartesianGrid stroke="#ece7d6" horizontal={false} /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fill: '#5a6b61' }} /><YAxis type="category" dataKey="name" orientation="right" width={100} tick={{ fontSize: 11, fill: '#2c4337' }} /><Tooltip formatter={(v: number) => [`${v.toLocaleString('ar-EG')} قطعة`, 'الكمية']} /><Bar dataKey="quantity" name="الكمية" fill="#17402d" radius={[4, 0, 0, 4]} maxBarSize={22} /></BarChart></ResponsiveContainer></div>
               <ol className="m-0 divide-y divide-[#ece7d6] p-0">{report.bestSellers.slice(0, 5).map((b, i) => <li key={b.productId} className="flex items-center gap-3 px-5 py-3 text-sm" data-testid={`row-bestseller-${b.productId}`}><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#e6efd0] text-xs font-bold text-[#1f6b45]">{(i + 1).toLocaleString('ar-EG')}</span><span className="min-w-0 flex-1 truncate font-bold">{b.name}</span><span className="text-xs text-[#5a6b61]">{b.quantity.toLocaleString('ar-EG')} قطعة</span><span className="text-xs font-bold"><Money amount={b.revenue} /></span></li>)}</ol></>
-              : <Empty title="لا توجد بيانات كافية" body="سيظهر الترتيب بعد تسجيل مبيعات في الفترة." />}
-          </Section>
-          <Section title="تقرير المنتجات الكامل" sub="الإيراد والتكلفة والربح الإجمالي لكل منتج" testId="section-products">
+              : <EmptyState title="لا توجد بيانات كافية" body="سيظهر الترتيب بعد تسجيل مبيعات في الفترة." />}
+          </SectionCard>
+          <SectionCard title="تقرير المنتجات الكامل" sub="الإيراد والتكلفة والربح الإجمالي لكل منتج" testId="section-products">
             {report.products.length ? <div className="overflow-x-auto"><table className="w-full min-w-[600px] text-right text-sm"><thead className="bg-[#f4f1e6] text-[11px] text-[#5a6b61]"><tr><th className="px-5 py-3">المنتج</th><th className="px-3 py-3">الكمية</th><th className="px-3 py-3">الإيراد</th><th className="px-3 py-3">التكلفة</th><th className="px-5 py-3">الربح الإجمالي</th></tr></thead><tbody className="divide-y divide-[#ece7d6]">{report.products.map(p => <tr key={p.productId} className="hover:bg-[#f7f3e7]" data-testid={`row-report-product-${p.productId}`}><td className="px-5 py-3 font-bold">{p.name}</td><td className="px-3 py-3">{p.quantity.toLocaleString('ar-EG')}</td><td className="px-3 py-3"><Money amount={p.revenue} /></td><td className="px-3 py-3"><Money amount={p.cost} /></td><td className="px-5 py-3 font-bold"><Money amount={p.profit} /></td></tr>)}</tbody></table></div>
-              : <Empty title="لا توجد منتجات مباعة" body="لم تُسجل مبيعات لهذه الفلاتر." />}
-          </Section>
+              : <EmptyState title="لا توجد منتجات مباعة" body="لم تُسجل مبيعات لهذه الفلاتر." />}
+          </SectionCard>
         </div>
       </div>}
   </div>;

@@ -18,6 +18,7 @@ import { Activity, ArrowDownLeft, ArrowUpLeft, CalendarDays, Clock3, Download, P
 import { Button, EmptyState, ErrorBlock, Notice, PageTitle, SectionCard, SelectField, SkeletonRows } from '@/components/app/ui';
 
 const PAGE_SIZE = 25;
+const MAX_STOCK = 2_147_483_647;
 
 const movementLabels: Record<InventoryMovement['type'], string> = {
   opening: 'رصيد افتتاحي',
@@ -135,8 +136,21 @@ export function InventoryMovementsPage() {
       setFormError('اختر المنتج المراد توريده.');
       return;
     }
-    if (!Number.isInteger(amount) || amount < 1) {
-      setFormError('أدخل كمية صحيحة لا تقل عن قطعة واحدة.');
+    if (!quantity.trim()) {
+      setFormError('أدخل الكمية الواردة.');
+      return;
+    }
+    if (!Number.isFinite(amount) || !Number.isInteger(amount)) {
+      setFormError('الكمية يجب أن تكون عدداً صحيحاً بدون كسور.');
+      return;
+    }
+    if (amount < 1) {
+      setFormError('الكمية يجب ألا تقل عن قطعة واحدة، ولا تقبل القيم السالبة أو الصفر.');
+      return;
+    }
+    const currentBalance = products.find(product => product.id === selectedProduct)?.quantity ?? 0;
+    if (currentBalance + amount > MAX_STOCK) {
+      setFormError('الكمية كبيرة جداً؛ لا يمكن أن يتجاوز رصيد المنتج ٢٫١٤٧ مليار قطعة.');
       return;
     }
     const cleanReason = reason.trim();
@@ -244,7 +258,7 @@ export function InventoryMovementsPage() {
       </SectionCard>
 
       <SectionCard as="aside" className="xl:sticky xl:top-[92px]" title="تسجيل توريد" sub="أضف الكمية الواردة إلى رصيد منتج." titleId="supply-form-title" icon={<ArrowDownLeft size={19} />}>
-        <form onSubmit={submitSupply} className="grid gap-4 p-5">
+        <form onSubmit={submitSupply} noValidate className="grid gap-4 p-5">
           <SelectField label="المنتج" required value={productId} onChange={event => updateSupplyField(() => setProductId(event.target.value))} disabled={productsQ.isLoading || productsQ.isError || products.length === 0 || createSupply.isPending} data-testid="select-supply-product">
             <option value="">{productsQ.isLoading ? 'جارٍ تحميل المنتجات...' : products.length ? 'اختر المنتج' : 'لا توجد منتجات متاحة'}</option>{products.map(product => <option key={product.id} value={product.id}>{product.name} · الرصيد {product.quantity}</option>)}
           </SelectField>

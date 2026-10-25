@@ -273,6 +273,25 @@ paths:
                 $ref: "#/components/schemas/InventoryMovementsPage"
         "400":
           description: Invalid filters or pagination
+    post:
+      operationId: createInventorySupply
+      tags: [tager]
+      summary: Record inventory supply
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InventorySupplyInput" }
+      responses:
+        "201":
+          description: Supply recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InventoryMovement" }
+        "400":
+          description: Invalid supply
+        "409":
+          description: Replayed request
   /inventory-movements/export:
     get:
       operationId: exportInventoryMovements
@@ -301,25 +320,6 @@ paths:
               schema: { type: string }
         "400":
           description: Invalid filters or missing date range
-    post:
-      operationId: createInventorySupply
-      tags: [tager]
-      summary: Record inventory supply
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/InventorySupplyInput" }
-      responses:
-        "201":
-          description: Supply recorded
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/InventoryMovement" }
-        "400":
-          description: Invalid supply
-        "409":
-          description: Replayed request
   /dashboard:
     get:
       operationId: getDashboard

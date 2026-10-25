@@ -1210,6 +1210,94 @@ export function useListInventoryMovements<TData = Awaited<ReturnType<typeof list
 
 
 
+export const getCreateInventorySupplyUrl = () => {
+
+
+
+
+  return `/api/inventory-movements`
+}
+
+/**
+ * @summary Record inventory supply
+ */
+export const createInventorySupply = async (inventorySupplyInput: InventorySupplyInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<InventoryMovement>(getCreateInventorySupplyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(inventorySupplyInput)
+  }
+);}
+
+
+
+
+
+export const getCreateInventorySupplyMutationKey = () => ['createInventorySupply'] as const;
+
+export const getCreateInventorySupplyMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext> => {
+
+const mutationKey = getCreateInventorySupplyMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInventorySupply>>, CreateInventorySupplyMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInventorySupply(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInventorySupplyMutationResult = NonNullable<Awaited<ReturnType<typeof createInventorySupply>>>
+    export type CreateInventorySupplyMutationBody = BodyType<InventorySupplyInput>
+    export type CreateInventorySupplyMutationError = ErrorType<void>
+    export type CreateInventorySupplyMutationVariables = {data: BodyType<InventorySupplyInput>}
+
+    /**
+ * @summary Record inventory supply
+ */
+export const useCreateInventorySupply = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInventorySupply>>,
+        TError,
+        CreateInventorySupplyMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateInventorySupplyMutationOptions(options));
+    }
+
 export const getExportInventoryMovementsUrl = (params?: ExportInventoryMovementsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -1293,94 +1381,6 @@ export function useExportInventoryMovements<TData = Awaited<ReturnType<typeof ex
 
 
 
-
-export const getCreateInventorySupplyUrl = () => {
-
-
-
-
-  return `/api/inventory-movements/export`
-}
-
-/**
- * @summary Record inventory supply
- */
-export const createInventorySupply = async (inventorySupplyInput: InventorySupplyInput, options?: Parameters<typeof customFetch>[1]): Promise<InventoryMovement> => {
-
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return customFetch<InventoryMovement>(getCreateInventorySupplyUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(inventorySupplyInput)
-  }
-);}
-
-
-
-
-
-export const getCreateInventorySupplyMutationKey = () => ['createInventorySupply'] as const;
-
-export const getCreateInventorySupplyMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext> => {
-
-const mutationKey = getCreateInventorySupplyMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInventorySupply>>, CreateInventorySupplyMutationVariables> = (props) => {
-          const {data} = props ?? {};
-
-          return  createInventorySupply(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type CreateInventorySupplyMutationResult = NonNullable<Awaited<ReturnType<typeof createInventorySupply>>>
-    export type CreateInventorySupplyMutationBody = BodyType<InventorySupplyInput>
-    export type CreateInventorySupplyMutationError = ErrorType<void>
-    export type CreateInventorySupplyMutationVariables = {data: BodyType<InventorySupplyInput>}
-
-    /**
- * @summary Record inventory supply
- */
-export const useCreateInventorySupply = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInventorySupply>>, TError,CreateInventorySupplyMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof createInventorySupply>>,
-        TError,
-        CreateInventorySupplyMutationVariables,
-        TContext
-      > => {
-      return useMutation(getCreateInventorySupplyMutationOptions(options));
-    }
 
 export const getGetDashboardUrl = () => {
 

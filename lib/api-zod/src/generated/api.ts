@@ -365,19 +365,6 @@ export const ListInventoryMovementsResponse = zod.object({
 
 
 /**
- * @summary Export filtered inventory movements as CSV
- */
-export const ExportInventoryMovementsQueryParams = zod.object({
-  "search": zod.coerce.string().optional(),
-  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']).optional(),
-  "from": zod.date().optional(),
-  "to": zod.date().optional()
-})
-
-export const ExportInventoryMovementsResponse = zod.unknown()
-
-
-/**
  * @summary Record inventory supply
  */
 
@@ -417,6 +404,19 @@ export const CreateInventorySupplyResponse = zod.object({
   "supplierName": zod.string().nullable(),
   "createdAt": zod.coerce.date()
 })
+
+
+/**
+ * @summary Export filtered inventory movements as CSV
+ */
+export const ExportInventoryMovementsQueryParams = zod.object({
+  "search": zod.coerce.string().optional(),
+  "type": zod.enum(['opening', 'sale', 'supply', 'adjustment']).optional(),
+  "from": zod.date().optional(),
+  "to": zod.date().optional()
+})
+
+export const ExportInventoryMovementsResponse = zod.unknown()
 
 
 /**

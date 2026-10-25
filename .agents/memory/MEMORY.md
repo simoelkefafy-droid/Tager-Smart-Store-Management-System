@@ -1,1 +1,2 @@
 - [Real store data](real-store-data.md) — preserve existing records, no automatic demo data; purchases use weighted average cost and historical sale snapshots.
+- [OpenAPI codegen gotchas](openapi-codegen-gotchas.md) — mis-indented spec operations generate wrong client URLs while typecheck passes; verify generated URLs.

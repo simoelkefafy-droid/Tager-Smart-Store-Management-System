@@ -54,7 +54,7 @@ export function PurchasesPage() {
     <PageTitle title="المشتريات" subtitle="سجّل فواتير الاستلام من الموردين لتدخل الكميات للمخزون بتكلفتها الحقيقية." />
     <Notice kind="info" testId="text-purchase-explainer" className="mb-5">عند حفظ الفاتورة تُضاف كل الكميات إلى المخزون دفعة واحدة؛ إما أن تُسجَّل الفاتورة كاملة أو لا يُسجَّل شيء. يُعاد حساب <b>سعر الشراء</b> لكل منتج كمتوسط مرجّح: (الرصيد الحالي × التكلفة الحالية + الكمية الواردة × تكلفة الوحدة) ÷ الرصيد الجديد. المبيعات السابقة تحتفظ بتكلفتها وقت البيع، فلا تتغير أرباحك القديمة.</Notice>
     <div className="grid items-start gap-5 xl:grid-cols-[1.2fr_1fr]">
-      <form onSubmit={submit} className="panel grid gap-4 p-5 sm:p-6" data-testid="form-purchase">
+      <form onSubmit={submit} noValidate className="panel grid gap-4 p-5 sm:p-6" data-testid="form-purchase">
         <div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#e6efd0] text-[#1f6b45]"><PackagePlus size={19} /></span><div><h2 className="tg-display m-0 text-lg font-bold">فاتورة استلام جديدة</h2><p className="m-0 mt-1 text-xs text-[#5a6b61]">أضف سطراً لكل منتج مستلم</p></div></div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="tg-label">المورد

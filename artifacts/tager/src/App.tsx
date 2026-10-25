@@ -1,29 +1,14 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode, type InputHTMLAttributes, type SelectHTMLAttributes } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { arSA } from '@clerk/localizations';
 import { shadcn } from '@clerk/themes';
 import authImg from '@/assets/images/auth-storefront.webp';
-import emptyBox from '@/assets/images/empty-box.webp';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import {
-  getGetDashboardQueryKey, getGetReportsQueryKey, getListProductsQueryKey,
-  getListSalesQueryKey, getListSuppliersQueryKey,
-  getListInventoryMovementsQueryKey,
-  useCreateProduct, useCreateSale, useCreateSupplier, useDeleteProduct,
-  useDeleteSupplier, useGetDashboard, useListProducts,
-  useListSales, useListSuppliers, useUpdateProduct, useUpdateSupplier,
-  type Product, type Supplier, type Sale,
-} from '@workspace/api-client-react';
-import {
-  Activity, AlertTriangle, ArrowLeft, ArrowUpLeft, BarChart3,
-  Boxes, Check, ChevronDown, CircleHelp, FileBarChart2, Filter,
-  Home, LogOut, Menu, Package, Plus, Search, ShoppingCart,
-  Store, Truck, Wallet, X, Pencil, Trash2, RotateCw, Users, ReceiptText,
-} from 'lucide-react';
+import { Activity, BarChart3, Home, LogOut, Menu, Package, Plus, ShoppingCart, Truck, X, ReceiptText } from 'lucide-react';
 import { Route, Switch, Router as WouterRouter, Link, Redirect, useLocation } from 'wouter';
 import { InventoryMovementsPage } from '@/pages/inventory-movements';
 import { PurchasesPage } from '@/pages/purchases';
@@ -31,7 +16,8 @@ import { ReportsPage } from '@/pages/reports';
 import { Landing } from '@/pages/landing';
 import { Overview } from '@/pages/overview';
 import { ProductPage } from '@/pages/products';
-import { PageTitle, Button, LoadingBlock, ErrorBlock, EmptyState, EGP, StatCard, Dialog, Field, SelectField, getErrorMessage, useApiOptions } from '@/components/app/ui';
+import { SalesPage } from '@/pages/sales';
+import { SupplierPage } from '@/pages/suppliers';
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -158,71 +144,6 @@ function Shell({ children }: { children: ReactNode }) {
   </div>;
 }
 
-
-function SalesTable({ sales }: { sales: Sale[] }) {
-  return <div className="overflow-x-auto"><table className="responsive-table w-full text-right text-sm"><thead className="bg-[#f4f1e6] text-[11px] font-semibold text-[#5a6b61]"><tr><th className="px-5 py-3">رقم العملية</th><th className="px-4 py-3">المنتجات</th><th className="px-4 py-3">التاريخ</th><th className="px-5 py-3">الإجمالي</th></tr></thead><tbody className="divide-y divide-[#ece7d6]">{sales.map(s => <tr key={s.id} data-testid={`row-sale-${s.id}`} className="hover:bg-[#f7f3e7]"><td data-label="رقم العملية" className="px-5 py-4 font-bold">#{s.id}</td><td data-label="المنتجات" className="px-4 py-4 text-[#627080]">{s.items?.length || 0} أصناف</td><td data-label="التاريخ" className="px-4 py-4 text-[#627080]">{new Date(s.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })}</td><td data-label="الإجمالي" className="px-5 py-4 font-bold"><EGP amount={s.total} /></td></tr>)}</tbody></table></div>;
-}
-
-function SalesPage() {
-  const api = useApiOptions(); const client = useQueryClient();
-  const productsQ = useListProducts(api); const salesQ = useListSales(undefined, api); const createSale = useCreateSale(api);
-  const products = productsQ.data || []; const sales = salesQ.data || [];
-  const [cart, setCart] = useState<{ productId: number; quantity: number }[]>([]);
-  const [selected, setSelected] = useState(''); const [qty, setQty] = useState(1); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
-  const total = cart.reduce((sum, item) => sum + (products.find(p => p.id === item.productId)?.sellingPrice || 0) * item.quantity, 0);
-  const add = () => {
-    const product = products.find(p => p.id === Number(selected));
-    if (!product) return;
-    const already = cart.find(i => i.productId === product.id)?.quantity || 0;
-    if (qty < 1 || already + qty > product.quantity) { setError('الكمية المطلوبة أكبر من المخزون المتاح.'); return; }
-    setError(''); setCart(old => { const existing = old.find(i => i.productId === product.id); return existing ? old.map(i => i.productId === product.id ? { ...i, quantity: i.quantity + qty } : i) : [...old, { productId: product.id, quantity: qty }]; });
-  };
-  const checkout = async () => {
-    setError(''); setNotice('');
-    try { await createSale.mutateAsync({ data: { items: cart } }); setCart([]); setNotice('تم تسجيل عملية البيع وتحديث المخزون.'); await Promise.all([client.invalidateQueries({ queryKey: getListSalesQueryKey() }), client.invalidateQueries({ queryKey: getListProductsQueryKey() }), client.invalidateQueries({ queryKey: getGetDashboardQueryKey() }), client.invalidateQueries({ queryKey: getGetReportsQueryKey() }), client.invalidateQueries({ queryKey: getListInventoryMovementsQueryKey() })]); }
-    catch (e) { setError(getErrorMessage(e)); }
-  };
-  if (productsQ.isLoading || salesQ.isLoading) return <LoadingBlock />;
-  if (productsQ.isError || salesQ.isError) return <ErrorBlock retry={() => { productsQ.refetch(); salesQ.refetch(); }} />;
-  return <div className="fade-up">
-    <PageTitle title="المبيعات" subtitle="سجّل المبيعات بسهولة وراجع سجل عمليات متجرك." />
-    <div className="grid items-start gap-5 xl:grid-cols-[.85fr_1.4fr]">
-      <section className="panel p-5 sm:p-6"><div className="mb-5 flex items-start justify-between"><div><h2 className="m-0 text-lg font-bold">عملية بيع جديدة</h2><p className="mb-0 mt-1 text-xs text-[#5a6b61]">أضف المنتجات وحدد الكمية</p></div><span className="rounded-2xl bg-[#e6efd0] p-2.5 text-[#1f6b45]"><ShoppingCart size={19} /></span></div>
-        <div className="grid gap-3 sm:grid-cols-[1fr_100px_auto] xl:grid-cols-1 2xl:grid-cols-[1fr_100px_auto]">
-          <SelectField label="المنتج" value={selected} onChange={e => setSelected(e.target.value)} data-testid="select-sale-product"><option value="">اختر منتجاً</option>{products.map(p => <option key={p.id} value={p.id} disabled={p.quantity < 1}>{p.name} — {p.quantity} متاح</option>)}</SelectField>
-          <Field label="الكمية" type="number" min="1" value={qty} onChange={e => setQty(Number(e.target.value))} data-testid="input-sale-quantity" />
-          <div className="flex items-end"><Button testId="button-add-to-sale" onClick={add} secondary><Plus size={16} />أضف</Button></div>
-        </div>
-        <div className="my-5 border-t border-[#ece7d6]" />
-        {cart.length ? <div className="space-y-3">{cart.map(item => { const p = products.find(x => x.id === item.productId)!; return <div key={item.productId} className="flex items-center justify-between gap-2 rounded-2xl bg-[#f4f1e6] p-3" data-testid={`cart-item-${p.id}`}><div><div className="text-sm font-bold">{p.name}</div><div className="mt-1 text-xs text-[#5a6b61]">{item.quantity} × <EGP amount={p.sellingPrice} /></div></div><div className="flex items-center gap-3"><b className="text-sm"><EGP amount={item.quantity * p.sellingPrice} /></b><button aria-label="إزالة المنتج" onClick={() => setCart(old => old.filter(i => i.productId !== item.productId))} data-testid={`button-remove-cart-${p.id}`} className="rounded-lg p-1.5 text-[#5a6b61] hover:bg-[#fff0ed]"><X size={16} /></button></div></div>; })}</div> : <div className="rounded-2xl border border-dashed border-[#d6d0bb] py-7 text-center text-sm text-[#5a6b61]" data-testid="state-cart-empty">لم تُضف منتجات إلى هذه العملية</div>}
-        <div className="mt-5 flex items-center justify-between border-t border-[#ece7d6] pt-4"><span className="text-sm font-semibold text-[#627080]">الإجمالي</span><b className="text-xl"><EGP amount={total} /></b></div>
-        {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fbe9e4] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-sale-error">{error}</div>}
-        {notice && <div className="mt-3 flex items-center gap-2 rounded-2xl bg-[#e6efd0] p-3 text-sm text-[#1f6b45]" data-testid="status-sale-success"><Check size={16} />{notice}</div>}
-        <Button testId="button-complete-sale" onClick={checkout} disabled={!cart.length || createSale.isPending}><Check size={16} />{createSale.isPending ? 'جارٍ تسجيل البيع...' : 'تأكيد عملية البيع'}</Button>
-      </section>
-      <section className="panel overflow-hidden"><div className="border-b border-[#ece7d6] px-5 py-4"><h2 className="m-0 text-base font-bold">سجل المبيعات</h2><p className="mb-0 mt-1 text-xs text-[#5a6b61]">العمليات الأخيرة المسجلة</p></div>{sales.length ? <SalesTable sales={sales} /> : <EmptyState title="لا توجد عمليات بيع" body="ستظهر هنا كل عملية تسجلها في متجرك." />}</section>
-    </div>
-  </div>;
-}
-
-function SupplierPage() {
-  const api = useApiOptions(); const client = useQueryClient(); const q = useListSuppliers(api);
-  const create = useCreateSupplier(api); const update = useUpdateSupplier(api); const remove = useDeleteSupplier(api);
-   const suppliers = q.data || []; const [form, setForm] = useState<Supplier | null | false>(false); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [search, setSearch] = useState('');
-  const filtered = suppliers.filter(s => `${s.name} ${s.phone} ${s.products}`.toLowerCase().includes(search.toLowerCase()));
-   const submit = async (e: FormEvent<HTMLFormElement>) => { e.preventDefault(); const f = new FormData(e.currentTarget); const data = { name: String(f.get('name')), phone: String(f.get('phone')), products: String(f.get('products')) }; setError(''); try { if (form) await update.mutateAsync({ id: form.id, data }); else await create.mutateAsync({ data }); await client.invalidateQueries({ queryKey: getListSuppliersQueryKey() }); setNotice(form ? 'تم تحديث بيانات المورد.' : 'تمت إضافة المورد بنجاح.'); setForm(false); } catch (e) { setError(getErrorMessage(e)); } };
-   const deleteItem = async (s: Supplier) => { if (!window.confirm(`حذف المورد «${s.name}»؟`)) return; try { await remove.mutateAsync({ id: s.id }); await client.invalidateQueries({ queryKey: getListSuppliersQueryKey() }); setNotice('تم حذف المورد.'); setError(''); } catch (e) { setError(getErrorMessage(e)); } };
-  if (q.isLoading) return <LoadingBlock />;
-  if (q.isError) return <ErrorBlock retry={() => q.refetch()} />;
-  return <div className="fade-up">
-     <PageTitle title="الموردون" subtitle="بيانات الموردين والأصناف التي يوفرونها." action={<Button testId="button-add-supplier" onClick={() => { setForm(null); setError(''); setNotice(''); }}><Plus size={16} />إضافة مورد</Button>} />
-     {notice && <div className="mb-4 flex items-center gap-2 rounded-2xl border border-[#bfdcc9] bg-[#e8f4ec] px-4 py-3 text-sm font-semibold text-[#1f6b45] shadow-sm" role="status" data-testid="status-supplier-success">{notice}</div>}
-    <div className="mb-5"><label className="relative block max-w-md"><Search size={17} className="absolute right-3 top-3 text-[#5a6b61]" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث عن مورد..." data-testid="input-search-suppliers" className="h-11 w-full rounded-2xl border border-[#d6d0bb] bg-white pr-10 pl-3 text-sm outline-none focus:border-[#17402d] focus:ring-2 focus:ring-[#17402d]/20" /></label></div>
-    {filtered.length ? <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{filtered.map((s, index) => <article key={s.id} className="panel p-5 transition hover:-translate-y-0.5 hover:shadow-md" data-testid={`card-supplier-${s.id}`}><div className="flex items-start justify-between"><div className="flex items-center gap-3"><div className={`flex h-11 w-11 items-center justify-center rounded-2xl font-bold ${['bg-[#eaf2ed] text-[#1f6b45]', 'bg-[#edf1f6] text-[#426181]', 'bg-[#f5efe4] text-[#9b7842]'][index % 3]}`}><Users size={19} /></div><div><h2 className="m-0 text-base font-bold">{s.name}</h2><div className="mt-1 text-xs text-[#5a6b61]">مورد رقم {s.id}</div></div></div><div className="flex"><button onClick={() => { setForm(s); setError(''); }} data-testid={`button-edit-supplier-${s.id}`} aria-label="تعديل المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#4d5f72] hover:bg-[#edf3ef]"><Pencil size={15} /></button><button onClick={() => deleteItem(s)} data-testid={`button-delete-supplier-${s.id}`} aria-label="حذف المورد" className="inline-flex h-11 w-11 items-center justify-center rounded-xl text-[#5a6b61] hover:bg-[#fff0ed] hover:text-[#8d2f29]"><Trash2 size={15} /></button></div></div><div className="mt-5 grid gap-3 border-t border-[#ece7d6] pt-4"><div className="flex items-center gap-2 text-sm text-[#617080]"><span className="text-xs font-semibold text-[#5a6b61]">الهاتف</span><span dir="ltr">{s.phone || '—'}</span></div><div><div className="mb-2 text-xs font-semibold text-[#5a6b61]">الأصناف التي يوفرها</div><div className="rounded-lg bg-[#f4f1e6] px-3 py-2 text-sm text-[#425163]">{s.products || 'لم تُحدد أصناف بعد'}</div></div></div></article>)}</div> : <div className="panel"><EmptyState title={search ? 'لا توجد نتائج مطابقة' : 'سجّل موردي متجرك'} body={search ? 'جرّب البحث باسم أو رقم هاتف مختلف.' : 'احتفظ ببيانات التواصل والأصناف التي يوفرها كل مورد.'} action={!search ? <Button testId="button-empty-add-supplier" onClick={() => setForm(null)}><Plus size={15} />إضافة مورد</Button> : undefined} /></div>}
-    {error && <div className="mt-3 rounded-2xl border border-[#f0c9c4] bg-[#fbe9e4] p-3 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</div>}
-    {form !== false && <Dialog title={form ? 'تعديل بيانات المورد' : 'إضافة مورد جديد'} onClose={() => setForm(false)}><form onSubmit={submit} className="grid gap-4"><Field label="اسم المورد" name="name" required defaultValue={form?.name || ''} data-testid="input-supplier-name" /><Field label="رقم الهاتف" name="phone" type="tel" defaultValue={form?.phone || ''} data-testid="input-supplier-phone" /><Field label="الأصناف التي يوفرها" name="products" required defaultValue={form?.products || ''} placeholder="مثال: مشروبات، وجبات خفيفة" data-testid="input-supplier-products" />{error && <p className="m-0 text-sm font-medium text-[#8d2f29]" data-testid="status-supplier-error">{error}</p>}<div className="flex gap-2"><Button type="submit" testId="button-save-supplier" disabled={create.isPending || update.isPending}>{create.isPending || update.isPending ? 'جارٍ الحفظ...' : 'حفظ المورد'}</Button><Button secondary testId="button-cancel-supplier" onClick={() => setForm(false)}>إلغاء</Button></div></form></Dialog>}
-  </div>;
-}
 
 function HomeRoute() {
   const { isLoaded, isSignedIn } = useAuth();

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { getGetReportsQueryKey, useGetReports, useListProducts, type Report } from '@workspace/api-client-react';
 import { Activity, CalendarDays, Download, Filter, Package, ShoppingBag, Wallet } from 'lucide-react';
 import { Button, EmptyState, ErrorBlock, Field, LoadingBlock, Notice, PageTitle, SectionCard, SelectField, StatCard } from '@/components/app/ui';

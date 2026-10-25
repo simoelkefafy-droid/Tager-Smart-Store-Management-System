@@ -173,3 +173,4 @@ textarea.tg-input { height:auto; padding:10px 12px; }
 .tg-icon-btn:disabled { opacity:.4; cursor:not-allowed; }
 .tg-input.has-icon-r { padding-right:40px; } .tg-input.has-suffix { padding-left:56px; }
 .tg-btn-sm { min-height:44px; padding:0 14px; font-size:13px; }
+.tg-icon-btn-neutral:hover { background:#e6efd0; color:#17402d; }

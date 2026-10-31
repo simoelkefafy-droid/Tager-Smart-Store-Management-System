@@ -56,3 +56,31 @@ mtime_ms = 1793472274836
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/8986bebe-14db-4972-98d0-5617434cea59/03bae3cd-1745-44f9-be96-d4dd9e4e5ee2"
 storage_version_token = "1793472362924825"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "hD_-anxdfaCUGP-oqQvqv"
+uri = "file://.local/outputs/Tager-Final.pptx"
+type = "slides"
+title = "تحميل النسخة النهائية — PowerPoint"
+description = "ملف PPTX مستقل وقابل للتعديل من 12 شريحة، بالغلاف المحدّث واسم المشرف أولًا. تم تنزيله وفتحه في LibreOffice Impress ومراجعة جميع الشرائح."
+logical_id = "4f7286a9-550f-44b7-848e-436139fa185c"
+content_hash = "sha256:609329978605eeb579209cc6ca47a8597e2262d31b8776767fa0d4a9d18c517e"
+size = 14188556
+mtime_ms = 1793472551689
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/4f7286a9-550f-44b7-848e-436139fa185c/0326c9fb-ef99-4f68-9b4b-634905d1e56c"
+storage_version_token = "1793472583561165"
+content_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+[[outputs]]
+id = "HOK_OneuBuTrpeFMWhzje"
+uri = "file://.local/outputs/Tager-Final.pdf"
+type = "pdf"
+title = "تحميل النسخة النهائية — PDF"
+description = "ملف PDF مستقل من 12 صفحة، بالغلاف المحدّث، جاهز للعرض والطباعة. تم فتحه وعرض جميع الصفحات ومراجعة تنسيقها. دون ZIP."
+logical_id = "6088d070-bac5-486a-a35f-a2910b6b3c3d"
+content_hash = "sha256:fa6c83cd9c8d92cb25f739b4e86e5a727bbc41b9225d35e711d22be6f4a5b3d3"
+size = 4928726
+mtime_ms = 1793472552305
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/6088d070-bac5-486a-a35f-a2910b6b3c3d/d685a7bf-5483-4b3d-aa07-15fc96542579"
+storage_version_token = "1793472584300396"
+content_type = "application/pdf"

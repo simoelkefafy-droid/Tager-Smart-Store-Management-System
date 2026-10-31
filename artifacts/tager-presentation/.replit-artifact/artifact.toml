@@ -1,0 +1,28 @@
+kind = "slides"
+previewPath = "/tager-presentation/"
+title = "Tager — عرض المشروع"
+description = "عرض أكاديمي من 12 شريحة عن Tager بالنبيتي والذهبي، يتضمن لقطات حقيقية وبيانات التنفيذ والإشراف، مع تصدير PowerPoint وPDF."
+version = "1.0.0"
+id = "artifacts/tager-presentation"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/tager-presentation/" ]
+localPort = 18392
+
+[services.development]
+run = "pnpm --filter @workspace/tager-presentation run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tager-presentation", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tager-presentation/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18392"
+BASE_PATH = "/tager-presentation/"

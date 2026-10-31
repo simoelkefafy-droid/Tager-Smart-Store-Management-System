@@ -1,0 +1,14 @@
+[
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610001","position":1,"filepath":"src/pages/slides/Cover.tsx","title":"Tager — Smart Store Management System","description":"غلاف المشروع وبيانات التنفيذ والإشراف الأكاديمي","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610002","position":2,"filepath":"src/pages/slides/Problem.tsx","title":"المشكلة: بيانات متفرقة وقرارات أصعب","description":"صعوبات التسجيل اليدوي ومتابعة المخزون","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610003","position":3,"filepath":"src/pages/slides/Idea.tsx","title":"فكرة المشروع: إدارة يوم المتجر من مكان واحد","description":"من احتياج عملي إلى تطبيق عربي","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610004","position":4,"filepath":"src/pages/slides/Goals.tsx","title":"أهداف المشروع: تنظيم أوضح ومتابعة أدق","description":"الترابط والتحديث والتوثيق والتقارير","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610005","position":5,"filepath":"src/pages/slides/Audience.tsx","title":"الفئة المستهدفة: صاحب المتجر الصغير","description":"أصحاب المتاجر الصغيرة ومحلات الحي","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610006","position":6,"filepath":"src/pages/slides/Features.tsx","title":"خصائص منفذة تربط أجزاء المتجر","description":"ستة مجالات موجودة بالفعل في التطبيق","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610007","position":7,"filepath":"src/pages/slides/Interfaces.tsx","title":"من داخل Tager: واجهات حقيقية من التطبيق","description":"لقطات لوحة المتجر والمنتجات والتقارير","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610008","position":8,"filepath":"src/pages/slides/Technology.tsx","title":"التقنيات المستخدمة فعليًا","description":"الواجهة والخادم وقاعدة البيانات والأدوات","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610009","position":9,"filepath":"src/pages/slides/Workflow.tsx","title":"كيف يعمل النظام؟ من العملية إلى التقرير","description":"مخطط تدفق الشراء والبيع إلى المخزون والتقارير","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610010","position":10,"filepath":"src/pages/slides/Value.tsx","title":"قيمة المشروع: تفاصيل مترابطة وقرار أوضح","description":"متابعة الرصيد وفهم الربح الإجمالي","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610011","position":11,"filepath":"src/pages/slides/Future.tsx","title":"التطويرات المستقبلية: خطوات مقترحة وليست منفذة","description":"خارطة تطوير مقترحة دون ادعاء التنفيذ","speakerNotes":""},
+  {"id":"b50b0ab4-e10f-44e7-b1e5-1b161b610012","position":12,"filepath":"src/pages/slides/Thanks.tsx","title":"شكرًا لكل من دعم هذه الفكرة","description":"الشكر والتقدير وفتح باب الأسئلة","speakerNotes":""}
+]

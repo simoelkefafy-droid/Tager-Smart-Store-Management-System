@@ -13,8 +13,8 @@ export default function Cover() {
         <h1 className="mt-[2vh]"><span className="en block !text-[7vw] leading-[1.1]">Tager</span><span className="en block !text-[2.6vw] mt-[1vh]">— Smart Store Management System</span></h1>
         <p className="mt-[2vh] !text-[2.45vw] font-semibold">نظام ذكي لإدارة المتاجر الصغيرة</p>
         <div className="mt-auto space-y-[2.2vh] pb-[1vh]">
-          <div><p className="attribution text-primary font-semibold">صاحبة المشروع والمنفذة: سهام كامل محمود الكفافي</p><p className="attribution en mt-[.7vh] text-left">Prepared by: Seham Kamel Mahmoud Elkefafy</p></div>
-          <div className="border-t border-accent/40 pt-[2vh]"><p className="attribution text-primary font-semibold">الإشراف الأكاديمي: د. طه محمود متولي نور الدين</p><p className="attribution en mt-[.7vh] text-left">Under the supervision of: Dr. Taha Mahmoud Metwally Nour El-Dein</p></div>
+          <div><p className="attribution text-primary font-semibold">الإشراف الأكاديمي: د. طه محمود متولي نور الدين</p><p className="attribution en mt-[.7vh] text-left"><span className="block text-primary font-semibold">Supervised by:</span><span className="block">Dr. Taha Mahmoud Metwally Nour El-Dein</span></p></div>
+          <div className="border-t border-accent/40 pt-[2vh]"><p className="attribution text-primary font-semibold">صاحبة المشروع والمنفذة: سهام كامل محمود الكفافي</p><p className="attribution en mt-[.7vh] text-left"><span className="block text-primary font-semibold">Prepared by:</span><span className="block">Seham Kamel Mahmoud Elkefafy</span></p></div>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-[1.6vw] items-center enter-later">

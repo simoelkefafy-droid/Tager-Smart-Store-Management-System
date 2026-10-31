@@ -1,108 +1,108 @@
 {
   "title": "Tager — Smart Store Management System",
   "slideCount": 12,
-  "version": "05cf1eab6e0c269f",
+  "version": "a7530e4bc41e4ce1",
   "assets": {
     "Tager-Presentation.pptx": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/Tager-Presentation.pptx",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/Tager-Presentation.pptx",
       "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-      "size": 14188544,
-      "sha256": "9d5a128cd7e3424e0ae83821ff4b35634b5949f9f9e81f2182c72e6bfacb6d80",
+      "size": 14188556,
+      "sha256": "609329978605eeb579209cc6ca47a8597e2262d31b8776767fa0d4a9d18c517e",
       "kind": "pptx"
     },
     "Tager-Presentation.pdf": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/Tager-Presentation.pdf",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/Tager-Presentation.pdf",
       "contentType": "application/pdf",
-      "size": 3836590,
-      "sha256": "5aedb120e452726da1f1d65c38d2b499010d1ed3ffa9443b2d779ad6e71a2367",
+      "size": 4928726,
+      "sha256": "fa6c83cd9c8d92cb25f739b4e86e5a727bbc41b9225d35e711d22be6f4a5b3d3",
       "kind": "pdf"
     },
     "cover.webp": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/cover.webp",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/cover.webp",
       "contentType": "image/webp",
-      "size": 74376,
-      "sha256": "a771154993f5e9ba279ad91e2ad73f884bac0926026ff323842e6782b2d39cfe",
+      "size": 71756,
+      "sha256": "cbc2785b6e12e53f915afc5f2bd7838b743c33931d44d893559907ead63126aa",
       "kind": "cover"
     },
     "slide-01.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-01.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-01.svg",
       "contentType": "image/svg+xml",
-      "size": 1764277,
-      "sha256": "9d6a83bf6686b221bf8f6be0e5396313a8ad7571bfe8910e4a8d3717e2676b55",
+      "size": 1772154,
+      "sha256": "9b83964573fe0fcfeff2a789a7bbbc1a884d3b95f29b5612221a4bd2f49127a3",
       "kind": "page"
     },
     "slide-02.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-02.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-02.svg",
       "contentType": "image/svg+xml",
       "size": 405946,
       "sha256": "044c43f1f2db7777dab2f607293a6468e7168d84e16cd18c7780c76222deadd1",
       "kind": "page"
     },
     "slide-03.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-03.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-03.svg",
       "contentType": "image/svg+xml",
       "size": 501189,
       "sha256": "07448a60d1e134dcea917b9063365d3f9a8f4ddc94718441f1466d0a9dfc47a7",
       "kind": "page"
     },
     "slide-04.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-04.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-04.svg",
       "contentType": "image/svg+xml",
       "size": 421912,
       "sha256": "6b41b2c5ee0062949496754e9b1631c7d49d5d615a321a8f316a49402ba8c6da",
       "kind": "page"
     },
     "slide-05.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-05.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-05.svg",
       "contentType": "image/svg+xml",
       "size": 393999,
       "sha256": "fcb9777b1c784afee4137ab7dd1ceb03cbddd1e3792eec54ac94889e67e3e272",
       "kind": "page"
     },
     "slide-06.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-06.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-06.svg",
       "contentType": "image/svg+xml",
       "size": 435023,
       "sha256": "aadb40356faebe80700c8a6010ed5a441416abc9c0eef338c548a548effff7d1",
       "kind": "page"
     },
     "slide-07.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-07.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-07.svg",
       "contentType": "image/svg+xml",
       "size": 463075,
       "sha256": "85319f76ae63d0c2e7987ca6963b98deb908651168d0c9a5f91fe147af487a60",
       "kind": "page"
     },
     "slide-08.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-08.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-08.svg",
       "contentType": "image/svg+xml",
       "size": 352828,
       "sha256": "72ece0198d1cdb673504ec669d76396c82a29a537f8e69ccada305f8b0f4ef8a",
       "kind": "page"
     },
     "slide-09.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-09.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-09.svg",
       "contentType": "image/svg+xml",
       "size": 469093,
       "sha256": "be5f59d9ee27861c2b0ea24fbfa51d27e1538f380a9822b3237c0c6afd1aa429",
       "kind": "page"
     },
     "slide-10.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-10.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-10.svg",
       "contentType": "image/svg+xml",
       "size": 516460,
       "sha256": "915f86b9ca43e6f3bb8313abcdf349ef5acad5a53f80def1c97b92c8495e054a",
       "kind": "page"
     },
     "slide-11.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-11.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-11.svg",
       "contentType": "image/svg+xml",
       "size": 348082,
       "sha256": "868a61e6acb58f5d03f7c854490a564d6a0b0cca7d8748a0cfa49036a15f15dc",
       "kind": "page"
     },
     "slide-12.svg": {
-      "objectName": "public/presentations/tager/05cf1eab6e0c269f/slide-12.svg",
+      "objectName": "public/presentations/tager/a7530e4bc41e4ce1/slide-12.svg",
       "contentType": "image/svg+xml",
       "size": 1203674,
       "sha256": "c6d47e45698e4fbc05b1ff941fed403bd812726a42a164e4ee817ee5fed72337",

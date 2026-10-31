@@ -28,3 +28,31 @@ mtime_ms = 1793468242132
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/82c9c44a-d6ab-4de6-9841-78d405154878/214b7d99-d432-42b5-8751-6e0916b2b40f"
 storage_version_token = "1793472107663967"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "U2t1gK209swPCk4lfy98X"
+uri = "file://.local/outputs/Tager-Updated-Cover.pptx"
+type = "slides"
+title = "تاجر — PowerPoint بالغلاف المعدّل"
+description = "نسخة PPTX قابلة للتعديل: اسم المشرف أولًا تحت Supervised by ثم اسم سهام تحت Prepared by. بقية الشرائح والصور والانتقالات لم تتغير."
+logical_id = "ed5dd175-44d1-472c-bfa0-77d97f73c27f"
+content_hash = "sha256:609329978605eeb579209cc6ca47a8597e2262d31b8776767fa0d4a9d18c517e"
+size = 14188556
+mtime_ms = 1793472273472
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/ed5dd175-44d1-472c-bfa0-77d97f73c27f/674c6343-92b7-4662-a6b6-7dfff9f1648e"
+storage_version_token = "1793472362310891"
+content_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+
+[[outputs]]
+id = "CCTuznoy93Sxu6PbxAEKj"
+uri = "file://.local/outputs/Tager-Updated-Cover.pdf"
+type = "pdf"
+title = "تاجر — PDF بالغلاف المعدّل"
+description = "نسخة PDF عالية الجودة من 12 صفحة، بالغلاف المعدّل فقط. تمت مراجعة الغلاف والتأكد من تطابق الصفحات الإحدى عشرة الأخرى مع النسخة السابقة."
+logical_id = "8986bebe-14db-4972-98d0-5617434cea59"
+content_hash = "sha256:fa6c83cd9c8d92cb25f739b4e86e5a727bbc41b9225d35e711d22be6f4a5b3d3"
+size = 4928726
+mtime_ms = 1793472274836
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:54b29e00-635c-4ecd-bae9-c0ccf6919fe7/8986bebe-14db-4972-98d0-5617434cea59/03bae3cd-1745-44f9-be96-d4dd9e4e5ee2"
+storage_version_token = "1793472362924825"
+content_type = "application/pdf"

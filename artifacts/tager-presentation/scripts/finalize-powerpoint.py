@@ -105,7 +105,8 @@ path = Path(sys.argv[1])
 layout = json.loads(Path(sys.argv[2]).read_text())
 with zipfile.ZipFile(path) as source:
     contents = {name: source.read(name) for name in source.namelist()}
-for index, models in enumerate(layout, 1):
+selected_layout = layout[:1] if "--cover-only" in sys.argv[3:] else layout
+for index, models in enumerate(selected_layout, 1):
     name = f"ppt/slides/slide{index}.xml"
     root = ET.fromstring(contents[name])
     tree = root.find("p:cSld/p:spTree", NS)
@@ -143,4 +144,4 @@ with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED) as target
     for name, value in contents.items():
         target.writestr(name, value)
 temporary.replace(path)
-print("Finalized 12 editable RTL slides with 12 native fade transitions and entrance animations.")
+print(f"Finalized {len(selected_layout)} editable RTL slide(s) with native fade transitions and entrance animations.")

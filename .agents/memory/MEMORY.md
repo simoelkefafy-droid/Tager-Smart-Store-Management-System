@@ -1,3 +1,3 @@
 - [Real store data](real-store-data.md) — preserve existing records, no automatic demo data; purchases use weighted average cost and historical sale snapshots.
 - [OpenAPI codegen gotchas](openapi-codegen-gotchas.md) — mis-indented spec operations generate wrong client URLs while typecheck passes; verify generated URLs.
-- [Presentation captures](presentation-captures.md) — browser-helper evidence is view-only; downloadable screenshots need separate read-only capture with a system-managed browser.
+- [Presentation exports](presentation-captures.md) — real screenshots, separate PPTX/PDF downloads, and editable Arabic text must be checked in an Office-compatible viewer.

@@ -56,6 +56,11 @@ export default defineConfig({
       clean: true,
       prettier: true,
       override: {
+        operations: {
+          // This binary resource validates its filename with a strict allowlist.
+          // Orval otherwise gives its path validator and query type the same name.
+          downloadPresentationAsset: { zod: { generate: { param: false } } },
+        },
         zod: {
           // Orval resolves `auto` from lib/api-spec/package.json, which has no
           // zod dependency, so orval >= 8.23 falls back to Zod 4 syntax while

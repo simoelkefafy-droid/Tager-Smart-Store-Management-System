@@ -12,7 +12,72 @@ tags:
     description: Health operations
   - name: tager
     description: Shop inventory and sales operations
+  - name: presentation
+    description: Public finalized presentation files and print assets
 paths:
+  /presentation-assets:
+    get:
+      operationId: getPresentationAssets
+      tags: [presentation]
+      summary: Current finalized Tager presentation downloads and print pages
+      responses:
+        "200":
+          description: Versioned public presentation asset manifest
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [title, slideCount, version, files, cover, pages]
+                properties:
+                  title: { type: string }
+                  slideCount: { type: integer }
+                  version: { type: string }
+                  files:
+                    type: object
+                    required: [pptx, pdf]
+                    properties:
+                      pptx: { $ref: "#/components/schemas/PresentationAsset" }
+                      pdf: { $ref: "#/components/schemas/PresentationAsset" }
+                  cover: { $ref: "#/components/schemas/PresentationAsset" }
+                  pages:
+                    type: array
+                    items: { $ref: "#/components/schemas/PresentationAsset" }
+  /presentation-assets/{filename}:
+    get:
+      operationId: downloadPresentationAsset
+      tags: [presentation]
+      summary: Serve an allowlisted presentation file without accessing store data
+      parameters:
+        - in: path
+          name: filename
+          required: true
+          schema: { type: string }
+        - in: query
+          name: v
+          required: false
+          schema: { type: string }
+        - in: header
+          name: Range
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Presentation asset with its original MIME type and filename
+          headers:
+            Content-Disposition: { schema: { type: string } }
+            ETag: { schema: { type: string } }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "206":
+          description: Requested byte range
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        "404": { description: Unknown filename }
+        "409": { description: Presentation version changed }
+        "416": { description: Invalid byte range }
+        "503": { description: File storage temporarily unavailable }
   /purchases:
     get:
       operationId: listPurchases
@@ -362,6 +427,15 @@ paths:
                 $ref: "#/components/schemas/Report"
 components:
   schemas:
+    PresentationAsset:
+      type: object
+      required: [filename, url, size, contentType, sha256]
+      properties:
+        filename: { type: string }
+        url: { type: string }
+        size: { type: integer }
+        contentType: { type: string }
+        sha256: { type: string }
     HealthStatus:
       type: object
       properties:

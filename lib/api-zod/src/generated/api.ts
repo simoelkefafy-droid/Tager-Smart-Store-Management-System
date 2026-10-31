@@ -8,6 +8,60 @@
 import * as zod from 'zod';
 
 
+/**
+ * @summary Current finalized Tager presentation downloads and print pages
+ */
+export const GetPresentationAssetsResponse = zod.object({
+  "title": zod.string(),
+  "slideCount": zod.number().int(),
+  "version": zod.string(),
+  "files": zod.object({
+  "pptx": zod.object({
+  "filename": zod.string(),
+  "url": zod.string(),
+  "size": zod.number().int(),
+  "contentType": zod.string(),
+  "sha256": zod.string()
+}),
+  "pdf": zod.object({
+  "filename": zod.string(),
+  "url": zod.string(),
+  "size": zod.number().int(),
+  "contentType": zod.string(),
+  "sha256": zod.string()
+})
+}),
+  "cover": zod.object({
+  "filename": zod.string(),
+  "url": zod.string(),
+  "size": zod.number().int(),
+  "contentType": zod.string(),
+  "sha256": zod.string()
+}),
+  "pages": zod.array(zod.object({
+  "filename": zod.string(),
+  "url": zod.string(),
+  "size": zod.number().int(),
+  "contentType": zod.string(),
+  "sha256": zod.string()
+}))
+})
+
+
+/**
+ * @summary Serve an allowlisted presentation file without accessing store data
+ */
+export const DownloadPresentationAssetQueryParams = zod.object({
+  "v": zod.string().optional()
+})
+
+export const DownloadPresentationAssetHeader = zod.object({
+  "Range": zod.string().optional()
+})
+
+export const DownloadPresentationAssetResponse = zod.unknown()
+
+
 export const ListPurchasesResponseItem = zod.object({
   "id": zod.number().int(),
   "supplierId": zod.number().int().nullish(),

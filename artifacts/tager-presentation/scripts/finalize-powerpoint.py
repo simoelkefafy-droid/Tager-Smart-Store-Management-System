@@ -41,8 +41,9 @@ def text_shape(parent, ident, model):
     el(prop, A, "noFill")
     el(el(prop, A, "ln"), A, "noFill")
     body = el(shape, P, "txBody")
-    bodyprop = el(body, A, "bodyPr", {"wrap": "none", "lIns": 0, "rIns": 0, "tIns": 0, "bIns": 0, "anchor": "t"})
-    el(bodyprop, A, "noAutofit")
+    bodyprop = el(body, A, "bodyPr", {"wrap": "square", "lIns": 0, "rIns": 0, "tIns": 0, "bIns": 0, "anchor": "t"})
+    # Keep editable text within its original bounds if a viewer substitutes fonts.
+    el(bodyprop, A, "normAutofit")
     el(body, A, "lstStyle")
     for line in model["lines"]:
         para = el(body, A, "p")

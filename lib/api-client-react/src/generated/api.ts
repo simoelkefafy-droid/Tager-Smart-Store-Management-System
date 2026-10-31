@@ -21,7 +21,9 @@ import type {
 
 import type {
   Dashboard,
+  DownloadPresentationAssetParams,
   ExportInventoryMovementsParams,
+  GetPresentationAssets200,
   GetReportsParams,
   HealthStatus,
   InventoryMovement,
@@ -66,6 +68,172 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPresentationAssetsUrl = () => {
+
+
+
+
+  return `/api/presentation-assets`
+}
+
+/**
+ * @summary Current finalized Tager presentation downloads and print pages
+ */
+export const getPresentationAssets = async ( options?: Parameters<typeof customFetch>[1]): Promise<GetPresentationAssets200> => {
+
+  return customFetch<GetPresentationAssets200>(getGetPresentationAssetsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPresentationAssetsQueryKey = () => {
+    return [
+    `/api/presentation-assets`
+    ] as const;
+    }
+
+
+export const getGetPresentationAssetsQueryOptions = <TData = Awaited<ReturnType<typeof getPresentationAssets>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPresentationAssets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPresentationAssetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPresentationAssets>>> = ({ signal }) => getPresentationAssets({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPresentationAssets>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPresentationAssetsQueryResult = NonNullable<Awaited<ReturnType<typeof getPresentationAssets>>>
+export type GetPresentationAssetsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Current finalized Tager presentation downloads and print pages
+ */
+
+export function useGetPresentationAssets<TData = Awaited<ReturnType<typeof getPresentationAssets>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPresentationAssets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPresentationAssetsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDownloadPresentationAssetUrl = (filename: string,
+    params?: DownloadPresentationAssetParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/presentation-assets/${filename}?${stringifiedParams}` : `/api/presentation-assets/${filename}`
+}
+
+/**
+ * @summary Serve an allowlisted presentation file without accessing store data
+ */
+export const downloadPresentationAsset = async (filename: string,
+    params?: DownloadPresentationAssetParams, options?: Parameters<typeof customFetch>[1]): Promise<Blob> => {
+
+  return customFetch<Blob>(getDownloadPresentationAssetUrl(filename,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadPresentationAssetQueryKey = (filename: string,
+    params?: DownloadPresentationAssetParams,) => {
+    return [
+    `/api/presentation-assets/${filename}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getDownloadPresentationAssetQueryOptions = <TData = Awaited<ReturnType<typeof downloadPresentationAsset>>, TError = ErrorType<void>>(filename: string,
+    params?: DownloadPresentationAssetParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadPresentationAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadPresentationAssetQueryKey(filename,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadPresentationAsset>>> = ({ signal }) => downloadPresentationAsset(filename,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: filename !== null && filename !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadPresentationAsset>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadPresentationAssetQueryResult = NonNullable<Awaited<ReturnType<typeof downloadPresentationAsset>>>
+export type DownloadPresentationAssetQueryError = ErrorType<void>
+
+
+/**
+ * @summary Serve an allowlisted presentation file without accessing store data
+ */
+
+export function useDownloadPresentationAsset<TData = Awaited<ReturnType<typeof downloadPresentationAsset>>, TError = ErrorType<void>>(
+ filename: string,
+    params?: DownloadPresentationAssetParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadPresentationAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadPresentationAssetQueryOptions(filename,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListPurchasesUrl = () => {
 

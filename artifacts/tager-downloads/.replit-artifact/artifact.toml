@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/tager-downloads/"
+title = "Tager — تحميل العرض"
+description = "صفحة مستقلة لتنزيل عرض Tager بصيغتي PowerPoint وPDF وطباعة الشرائح الاثنتي عشرة دون تعديل بيانات المتجر أو محرر الشرائح."
+version = "1.0.0"
+id = "artifacts/tager-downloads"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/tager-downloads/" ]
+localPort = 22321
+
+[services.development]
+run = "pnpm --filter @workspace/tager-downloads run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/tager-downloads", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/tager-downloads/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22321"
+BASE_PATH = "/tager-downloads/"

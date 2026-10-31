@@ -5,6 +5,14 @@
  * API for Tager small-shop management
  * OpenAPI spec version: 0.1.0
  */
+export interface PresentationAsset {
+  filename: string;
+  url: string;
+  size: number;
+  contentType: string;
+  sha256: string;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -250,6 +258,24 @@ export interface Report {
   daily: DailyReport[];
   bestSellers: BestSeller[];
 }
+
+export type GetPresentationAssets200Files = {
+  pptx: PresentationAsset;
+  pdf: PresentationAsset;
+};
+
+export type GetPresentationAssets200 = {
+  title: string;
+  slideCount: number;
+  version: string;
+  files: GetPresentationAssets200Files;
+  cover: PresentationAsset;
+  pages: PresentationAsset[];
+};
+
+export type DownloadPresentationAssetParams = {
+v?: string;
+};
 
 export type ListSalesParams = {
 /**
